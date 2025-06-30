@@ -5,10 +5,11 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   ScrollView,
-  Share 
+  Share,
+  Alert
 } from 'react-native';
 
-const ResultsScreen = ({ tipData, setTipData, onPrevious }) => {
+const ResultsScreen = ({ tipData, setTipData, onPrevious, goToScreen }) => {
   const calculateResults = () => {
     const { totalTips, bartenders, supportStaff, supportStaffPercentage } = tipData;
     
@@ -44,41 +45,65 @@ const ResultsScreen = ({ tipData, setTipData, onPrevious }) => {
   const results = calculateResults();
 
   const shareResults = async () => {
-    let shareText = `🍸 Tip Out Calculator Results\n\n`;
-    shareText += `Total Tips: $${results.totalTips.toFixed(2)}\n`;
-    shareText += `Bartender Pool (${100 - tipData.supportStaffPercentage}%): $${results.bartenderPool.toFixed(2)}\n`;
-    shareText += `Support Staff Pool (${tipData.supportStaffPercentage}%): $${results.supportPool.toFixed(2)}\n\n`;
+    let shareText = `🍸 Tip Distribution Results\n\n`;
+    shareText += `💰 Total Tips: $${results.totalTips.toFixed(2)}\n\n`;
     
-    shareText += `👩‍🍳 BARTENDERS:\n`;
-    results.bartenderResults.forEach(bartender => {
-      shareText += `${bartender.name}: $${bartender.tipAmount.toFixed(2)} (${bartender.percentage.toFixed(1)}%)\n`;
-    });
+    if (results.bartenderResults.length > 0) {
+      shareText += `👩‍🍳 BARTENDERS (${100 - tipData.supportStaffPercentage}% - $${results.bartenderPool.toFixed(2)}):\n`;
+      results.bartenderResults.forEach(bartender => {
+        shareText += `• ${bartender.name}: $${bartender.tipAmount.toFixed(2)} (${bartender.hours}h, ${bartender.percentage.toFixed(1)}%)\n`;
+      });
+      shareText += `\n`;
+    }
     
     if (results.supportResults.length > 0) {
-      shareText += `\n🛠 SUPPORT STAFF:\n`;
+      shareText += `🛠 SUPPORT STAFF (${tipData.supportStaffPercentage}% - $${results.supportPool.toFixed(2)}):\n`;
       results.supportResults.forEach(staff => {
-        shareText += `${staff.name}: $${staff.tipAmount.toFixed(2)} (${staff.percentage.toFixed(1)}%)\n`;
+        shareText += `• ${staff.name}: $${staff.tipAmount.toFixed(2)} (${staff.hours}h, ${staff.percentage.toFixed(1)}%)\n`;
       });
     }
+
+    shareText += `\n✅ Total Distributed: $${(
+      results.bartenderResults.reduce((sum, b) => sum + b.tipAmount, 0) +
+      results.supportResults.reduce((sum, s) => sum + s.tipAmount, 0)
+    ).toFixed(2)}`;
 
     try {
       await Share.share({
         message: shareText,
-        title: 'Tip Out Results'
+        title: 'Tip Distribution Results'
       });
     } catch (error) {
-      console.error('Error sharing:', error);
+      Alert.alert('Error', 'Could not share results');
     }
   };
 
-  const resetCalculator = () => {
-    setTipData({
-      totalTips: 0,
-      bartenders: [],
-      supportStaff: [],
-      supportStaffPercentage: 20
-    });
+  const startNewCalculation = () => {
+    Alert.alert(
+      'Start New Calculation',
+      'This will clear all current data. Are you sure?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Start New', 
+          style: 'destructive',
+          onPress: () => {
+            setTipData({
+              totalTips: 0,
+              bartenders: [],
+              supportStaff: [],
+              supportStaffPercentage: 20
+            });
+            goToScreen(0);
+          }
+        }
+      ]
+    );
   };
+
+  const totalDistributed = results.bartenderResults.reduce((sum, b) => sum + b.tipAmount, 0) +
+                          results.supportResults.reduce((sum, s) => sum + s.tipAmount, 0);
+  const isBalanced = Math.abs(totalDistributed - results.totalTips) < 0.01;
 
   return (
     <View style={styles.container}>
@@ -87,94 +112,103 @@ const ResultsScreen = ({ tipData, setTipData, onPrevious }) => {
         <TouchableOpacity onPress={onPrevious} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Tip Out Results</Text>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Results</Text>
+          <Text style={styles.headerSubtitle}>Tip distribution breakdown</Text>
+        </View>
         <TouchableOpacity onPress={shareResults} style={styles.shareButton}>
           <Text style={styles.shareButtonText}>↗</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollContainer}>
-        {/* Summary */}
-        <View style={styles.summaryContainer}>
-          <Text style={styles.totalTipsText}>Total Tips</Text>
-          <Text style={styles.totalTipsAmount}>${results.totalTips.toFixed(2)}</Text>
+      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        {/* Total Summary */}
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryLabel}>Total Tips</Text>
+          <Text style={styles.summaryAmount}>${results.totalTips.toFixed(2)}</Text>
           
-          <View style={styles.poolsContainer}>
-            <View style={styles.poolItem}>
-              <Text style={styles.poolLabel}>Bartender Pool</Text>
+          <View style={styles.poolsRow}>
+            <View style={styles.poolCard}>
+              <Text style={styles.poolLabel}>Bartenders</Text>
               <Text style={styles.poolAmount}>${results.bartenderPool.toFixed(2)}</Text>
               <Text style={styles.poolPercentage}>{100 - tipData.supportStaffPercentage}%</Text>
             </View>
             
-            <View style={styles.poolItem}>
-              <Text style={styles.poolLabel}>Support Pool</Text>
+            <View style={[styles.poolCard, styles.supportPoolCard]}>
+              <Text style={styles.poolLabel}>Support Staff</Text>
               <Text style={styles.poolAmount}>${results.supportPool.toFixed(2)}</Text>
               <Text style={styles.poolPercentage}>{tipData.supportStaffPercentage}%</Text>
             </View>
           </View>
         </View>
 
-        {/* Bartenders */}
-        <View style={styles.sectionContainer}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🍸 Bartenders</Text>
-          </View>
-          
-          {results.bartenderResults.map((bartender, index) => (
-            <View key={bartender.id} style={styles.personItem}>
-              <View style={styles.personInfo}>
-                <Text style={styles.personName}>{bartender.name}</Text>
-                <Text style={styles.personHours}>{bartender.hours} hours</Text>
-              </View>
-              <View style={styles.personPayout}>
-                <Text style={styles.personAmount}>${bartender.tipAmount.toFixed(2)}</Text>
-                <Text style={styles.personPercentage}>{bartender.percentage.toFixed(1)}%</Text>
-              </View>
+        {/* Bartenders Section */}
+        {results.bartenderResults.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>🍸 Bartenders</Text>
+              <Text style={styles.sectionCount}>({results.bartenderResults.length})</Text>
             </View>
-          ))}
-        </View>
+            
+            {results.bartenderResults.map((bartender, index) => (
+              <View key={bartender.id} style={styles.personCard}>
+                <View style={styles.personInfo}>
+                  <Text style={styles.personName}>{bartender.name}</Text>
+                  <Text style={styles.personDetails}>
+                    {bartender.hours} hours • {bartender.percentage.toFixed(1)}%
+                  </Text>
+                </View>
+                <Text style={styles.personAmount}>${bartender.tipAmount.toFixed(2)}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
-        {/* Support Staff */}
+        {/* Support Staff Section */}
         {results.supportResults.length > 0 && (
-          <View style={styles.sectionContainer}>
+          <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>🛠 Support Staff</Text>
+              <Text style={styles.sectionCount}>({results.supportResults.length})</Text>
             </View>
             
             {results.supportResults.map((staff, index) => (
-              <View key={staff.id} style={styles.personItem}>
+              <View key={staff.id} style={[styles.personCard, styles.supportPersonCard]}>
                 <View style={styles.personInfo}>
                   <Text style={styles.personName}>{staff.name}</Text>
-                  <Text style={styles.personHours}>{staff.hours} hours</Text>
+                  <Text style={styles.personDetails}>
+                    {staff.hours} hours • {staff.percentage.toFixed(1)}%
+                  </Text>
                 </View>
-                <View style={styles.personPayout}>
-                  <Text style={styles.personAmount}>${staff.tipAmount.toFixed(2)}</Text>
-                  <Text style={styles.personPercentage}>{staff.percentage.toFixed(1)}%</Text>
-                </View>
+                <Text style={[styles.personAmount, styles.supportAmount]}>${staff.tipAmount.toFixed(2)}</Text>
               </View>
             ))}
           </View>
         )}
 
         {/* Verification */}
-        <View style={styles.verificationContainer}>
-          <Text style={styles.verificationTitle}>Verification</Text>
+        <View style={[styles.verificationCard, isBalanced ? styles.verificationSuccess : styles.verificationError]}>
+          <Text style={styles.verificationTitle}>
+            {isBalanced ? '✅ Calculation Verified' : '⚠️ Calculation Error'}
+          </Text>
           <Text style={styles.verificationText}>
-            Total Distributed: ${(
-              results.bartenderResults.reduce((sum, b) => sum + b.tipAmount, 0) +
-              results.supportResults.reduce((sum, s) => sum + s.tipAmount, 0)
-            ).toFixed(2)}
+            Total Distributed: ${totalDistributed.toFixed(2)}
           </Text>
           <Text style={styles.verificationText}>
             Original Total: ${results.totalTips.toFixed(2)}
           </Text>
+          {!isBalanced && (
+            <Text style={styles.verificationError}>
+              Difference: ${Math.abs(totalDistributed - results.totalTips).toFixed(2)}
+            </Text>
+          )}
         </View>
       </ScrollView>
 
       {/* Action Buttons */}
       <View style={styles.actionsContainer}>
-        <TouchableOpacity style={styles.resetButton} onPress={resetCalculator}>
-          <Text style={styles.resetButtonText}>New Calculation</Text>
+        <TouchableOpacity style={styles.newCalculationButton} onPress={startNewCalculation}>
+          <Text style={styles.newCalculationButtonText}>New Calculation</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.shareMainButton} onPress={shareResults}>
@@ -189,182 +223,225 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginVertical: 10,
-    borderRadius: 20,
-    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5E7',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 22,
+    backgroundColor: '#F8F9FA',
   },
   backButtonText: {
-    fontSize: 24,
-    color: '#007AFF',
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#000',
-  },
-  shareButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  shareButtonText: {
     fontSize: 20,
     color: '#007AFF',
+    fontWeight: '600',
+  },
+  headerContent: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000000',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#8E8E93',
+    marginTop: 2,
+  },
+  shareButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 22,
+    backgroundColor: '#F8F9FA',
+  },
+  shareButtonText: {
+    fontSize: 18,
+    color: '#007AFF',
+    fontWeight: '600',
   },
   scrollContainer: {
     flex: 1,
+    paddingHorizontal: 24,
   },
-  summaryContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 30,
+  summaryCard: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 16,
+    padding: 24,
+    marginVertical: 16,
     alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5E7',
   },
-  totalTipsText: {
+  summaryLabel: {
     fontSize: 16,
     color: '#8E8E93',
     marginBottom: 8,
+    fontWeight: '500',
   },
-  totalTipsAmount: {
+  summaryAmount: {
     fontSize: 48,
     fontWeight: '300',
-    color: '#000',
-    marginBottom: 30,
+    color: '#000000',
+    marginBottom: 24,
   },
-  poolsContainer: {
+  poolsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
     width: '100%',
+    gap: 12,
   },
-  poolItem: {
+  poolCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#007AFF',
+  },
+  supportPoolCard: {
+    borderColor: '#FF9500',
   },
   poolLabel: {
     fontSize: 14,
     color: '#8E8E93',
-    marginBottom: 5,
+    marginBottom: 8,
+    fontWeight: '500',
   },
   poolAmount: {
     fontSize: 20,
-    fontWeight: '500',
-    color: '#000',
-    marginBottom: 2,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 4,
   },
   poolPercentage: {
     fontSize: 12,
-    color: '#007AFF',
+    color: '#8E8E93',
+    fontWeight: '500',
   },
-  sectionContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+  section: {
+    marginVertical: 8,
   },
   sectionHeader: {
-    marginBottom: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000000',
   },
-  personItem: {
+  sectionCount: {
+    fontSize: 16,
+    color: '#8E8E93',
+    marginLeft: 8,
+    fontWeight: '500',
+  },
+  personCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5E7',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#007AFF',
+  },
+  supportPersonCard: {
+    backgroundColor: '#FFF8F0',
+    borderLeftColor: '#FF9500',
   },
   personInfo: {
     flex: 1,
   },
   personName: {
-    fontSize: 17,
-    fontWeight: '500',
-    color: '#000',
-  },
-  personHours: {
-    fontSize: 15,
-    color: '#8E8E93',
-    marginTop: 2,
-  },
-  personPayout: {
-    alignItems: 'flex-end',
-  },
-  personAmount: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#34C759',
+    color: '#000000',
+    marginBottom: 4,
   },
-  personPercentage: {
-    fontSize: 13,
+  personDetails: {
+    fontSize: 14,
     color: '#8E8E93',
-    marginTop: 2,
+    fontWeight: '500',
   },
-  verificationContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    backgroundColor: '#F2F2F7',
-    marginHorizontal: 20,
-    marginVertical: 20,
+  personAmount: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#007AFF',
+  },
+  supportAmount: {
+    color: '#FF9500',
+  },
+  verificationCard: {
     borderRadius: 12,
+    padding: 20,
+    marginVertical: 16,
+    borderWidth: 2,
+  },
+  verificationSuccess: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#34C759',
+  },
+  verificationError: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FF6B6B',
   },
   verificationTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
-    marginBottom: 10,
+    color: '#000000',
+    marginBottom: 12,
   },
   verificationText: {
     fontSize: 14,
     color: '#8E8E93',
-    marginBottom: 5,
+    marginBottom: 4,
+    fontWeight: '500',
   },
   actionsContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    gap: 10,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+    gap: 12,
   },
-  resetButton: {
+  newCalculationButton: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
-    borderRadius: 25,
-    paddingVertical: 15,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 16,
+    paddingVertical: 18,
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#E5E5E7',
   },
-  resetButtonText: {
-    color: '#000',
-    fontSize: 17,
+  newCalculationButtonText: {
+    color: '#000000',
+    fontSize: 16,
     fontWeight: '600',
   },
   shareMainButton: {
     flex: 1,
-    backgroundColor: '#000',
-    borderRadius: 25,
-    paddingVertical: 15,
+    backgroundColor: '#007AFF',
+    borderRadius: 16,
+    paddingVertical: 18,
     alignItems: 'center',
   },
   shareMainButtonText: {
     color: '#FFFFFF',
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600',
   },
 });
