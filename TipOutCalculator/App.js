@@ -10,11 +10,8 @@ import {
 // import { PanGestureHandler } from 'react-native-gesture-handler';
 // import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import TipCalculatorScreen from './src/screens/TipCalculatorScreen';
-import BartenderEntryScreen from './src/screens/BartenderEntryScreen';
-import SupportStaffScreen from './src/screens/SupportStaffScreen';
+import PersonSelectionScreen from './src/screens/PersonSelectionScreen';
 import ResultsScreen from './src/screens/ResultsScreen';
-
-
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState(0);
@@ -27,8 +24,7 @@ export default function App() {
 
   const screens = [
     { component: TipCalculatorScreen, title: 'Enter Total Tips' },
-    { component: BartenderEntryScreen, title: 'Add Bartenders' },
-    { component: SupportStaffScreen, title: 'Add Support Staff' },
+    { component: PersonSelectionScreen, title: 'Add People' },
     { component: ResultsScreen, title: 'Results' }
   ];
 
