@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Haptics } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
 
@@ -13,8 +14,10 @@ const Keypad = ({ onNumberPress, onDecimalPress, onDeletePress, showDecimal = tr
 
   const handlePress = (value) => {
     // Add haptic feedback for better mobile UX
-    if (Haptics?.impactAsync) {
+    try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (error) {
+      // Haptics not available, continue without feedback
     }
     
     if (value === '⌫') {
