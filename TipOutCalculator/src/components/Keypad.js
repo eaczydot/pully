@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
-import { theme, createCircularButtonStyle } from '../theme';
+import { theme } from '../theme';
 
 const { width } = Dimensions.get('window');
 
@@ -15,13 +15,14 @@ const Keypad = ({ onNumberPress, onDecimalPress, onDeletePress, showDecimal = tr
   ];
 
   const handlePress = (value) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
     if (value === '⌫') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       onDeletePress();
     } else if (value === '.') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       onDecimalPress();
     } else if (value !== '') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       onNumberPress(value);
     }
   };
@@ -30,6 +31,7 @@ const Keypad = ({ onNumberPress, onDecimalPress, onDeletePress, showDecimal = tr
     const isNumber = !isNaN(button) || button === '.';
     const isDelete = button === '⌫';
     const isEmpty = button === '';
+    const isZero = button === '0';
     
     return (
       <TouchableOpacity
@@ -37,21 +39,22 @@ const Keypad = ({ onNumberPress, onDecimalPress, onDeletePress, showDecimal = tr
         style={[
           styles.button,
           isEmpty && styles.invisibleButton,
-          isDelete && styles.deleteButton,
+          isZero && styles.zeroButton,
         ]}
         onPress={() => handlePress(button)}
         disabled={isEmpty}
-        activeOpacity={0.3}
+        activeOpacity={0.6}
       >
         <View style={[
           styles.buttonContent,
           isDelete && styles.deleteButtonContent,
+          isZero && styles.zeroButtonContent,
         ]}>
           {isDelete ? (
             <Ionicons 
               name="backspace-outline" 
-              size={28} 
-              color={theme.colors.textSecondary} 
+              size={24} 
+              color={theme.colors.text} 
             />
           ) : (
             <Text style={[
@@ -92,38 +95,40 @@ const styles = StyleSheet.create({
   },
   button: {
     width: (width - (theme.spacing.lg * 2) - (theme.spacing.lg * 2)) / 3,
-    height: 70,
+    height: 75,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  zeroButton: {
+    // Zero button (middle position) gets special styling
+  },
   buttonContent: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 75,
+    height: 75,
+    borderRadius: 37.5,
     backgroundColor: theme.colors.surfaceSecondary,
     justifyContent: 'center',
     alignItems: 'center',
-    ...theme.shadows.sm,
+    ...theme.shadows.soft,
   },
-  deleteButton: {
-    // Delete button specific styles
+  zeroButtonContent: {
+    backgroundColor: theme.colors.surfaceTertiary,
   },
   deleteButtonContent: {
-    backgroundColor: theme.colors.surfaceTertiary,
+    backgroundColor: theme.colors.surfaceSecondary,
   },
   invisibleButton: {
     opacity: 0,
     pointerEvents: 'none',
   },
   buttonText: {
-    ...theme.typography.title,
+    ...theme.typography.amountMedium,
     color: theme.colors.text,
-    fontWeight: '300',
+    fontWeight: '200',
+    fontSize: 32,
   },
   deleteButtonText: {
-    fontSize: 24,
-    fontWeight: '400',
-    color: theme.colors.textSecondary,
+    color: theme.colors.text,
   },
 });
 

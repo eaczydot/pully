@@ -22,9 +22,19 @@ export const theme = {
     
     // Modern Accent Colors (Robinhood-inspired)
     teal: '#00D4AA',               // Modern teal
+    tealDark: '#00B794',           // Darker teal
     purple: '#6C5CE7',             // Modern purple
+    purpleDark: '#574BCE',         // Darker purple
     mint: '#63E6BE',               // Mint green
+    mintDark: '#4ECDC4',           // Darker mint
     coral: '#FF6B6B',              // Coral red
+    coralDark: '#FF5252',          // Darker coral
+    
+    // Soft pastels for subtle accents
+    softTeal: 'rgba(0, 212, 170, 0.1)',
+    softPurple: 'rgba(108, 92, 231, 0.1)',
+    softMint: 'rgba(99, 230, 190, 0.1)',
+    softCoral: 'rgba(255, 107, 107, 0.1)',
     
     // Borders and Dividers
     border: '#38383A',             // Subtle borders
@@ -32,9 +42,11 @@ export const theme = {
     
     // Special Effects
     shadow: 'rgba(0, 0, 0, 0.3)',
+    shadowLight: 'rgba(0, 0, 0, 0.15)',
     overlay: 'rgba(0, 0, 0, 0.6)',
     card: '#1C1C1E',
     cardElevated: '#2C2C2E',
+    cardHighlight: '#3A3A3C',
   },
   
   spacing: {
@@ -45,6 +57,7 @@ export const theme = {
     xl: 32,
     xxl: 48,
     xxxl: 64,
+    xxxxl: 80,
   },
   
   borderRadius: {
@@ -53,11 +66,18 @@ export const theme = {
     lg: 16,
     xl: 20,
     xxl: 28,
+    xxxl: 36,
     pill: 50,
     circle: 999,
   },
   
   typography: {
+    // Massive display numbers (Robinhood-style)
+    hero: {
+      fontSize: 72,
+      fontWeight: '100',
+      lineHeight: 80,
+    },
     // Large Display Numbers
     display: {
       fontSize: 56,
@@ -69,6 +89,12 @@ export const theme = {
       fontSize: 48,
       fontWeight: '300',
       lineHeight: 56,
+    },
+    // Medium amounts
+    amountMedium: {
+      fontSize: 36,
+      fontWeight: '300',
+      lineHeight: 42,
     },
     // Section Headers
     title: {
@@ -100,9 +126,16 @@ export const theme = {
       fontWeight: '400',
       lineHeight: 18,
     },
+    // Tiny text
+    micro: {
+      fontSize: 11,
+      fontWeight: '400',
+      lineHeight: 14,
+    },
   },
   
   shadows: {
+    none: {},
     sm: {
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
@@ -124,6 +157,28 @@ export const theme = {
       shadowRadius: 16,
       elevation: 8,
     },
+    xl: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: 0.25,
+      shadowRadius: 24,
+      elevation: 12,
+    },
+    // Soft shadows for modern cards
+    soft: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      elevation: 6,
+    },
+  },
+  
+  // Animation timing
+  animation: {
+    fast: 150,
+    normal: 250,
+    slow: 350,
   },
 };
 
@@ -152,8 +207,16 @@ export const createButtonStyle = (variant = 'primary', size = 'md') => {
     purple: {
       backgroundColor: theme.colors.purple,
     },
+    coral: {
+      backgroundColor: theme.colors.coral,
+    },
     dark: {
       backgroundColor: theme.colors.surfaceTertiary,
+    },
+    ghost: {
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
     },
   };
   
@@ -173,6 +236,11 @@ export const createButtonStyle = (variant = 'primary', size = 'md') => {
       paddingVertical: theme.spacing.lg,
       minHeight: 56,
     },
+    xl: {
+      paddingHorizontal: theme.spacing.xxl,
+      paddingVertical: theme.spacing.xl,
+      minHeight: 64,
+    },
   };
   
   return {
@@ -182,18 +250,43 @@ export const createButtonStyle = (variant = 'primary', size = 'md') => {
   };
 };
 
-export const createCardStyle = (elevation = 'md') => ({
-  backgroundColor: theme.colors.card,
-  borderRadius: theme.borderRadius.xl,
-  ...theme.shadows[elevation],
-});
+export const createCardStyle = (elevation = 'md', variant = 'default') => {
+  const base = {
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.xl,
+    ...theme.shadows[elevation],
+  };
+  
+  if (variant === 'elevated') {
+    base.backgroundColor = theme.colors.cardElevated;
+  } else if (variant === 'highlight') {
+    base.backgroundColor = theme.colors.cardHighlight;
+  }
+  
+  return base;
+};
 
-export const createCircularButtonStyle = (size = 64) => ({
+export const createCircularButtonStyle = (size = 64, elevation = 'sm') => ({
   width: size,
   height: size,
   borderRadius: size / 2,
   backgroundColor: theme.colors.surfaceSecondary,
   justifyContent: 'center',
   alignItems: 'center',
-  ...theme.shadows.sm,
+  ...theme.shadows[elevation],
+});
+
+// New helpers for modern components
+export const createPillCardStyle = (variant = 'default') => ({
+  backgroundColor: theme.colors.card,
+  borderRadius: theme.borderRadius.pill,
+  paddingHorizontal: theme.spacing.lg,
+  paddingVertical: theme.spacing.md,
+  ...theme.shadows.soft,
+});
+
+export const createMinimalCardStyle = () => ({
+  backgroundColor: 'transparent',
+  borderRadius: theme.borderRadius.xxl,
+  padding: theme.spacing.xl,
 });

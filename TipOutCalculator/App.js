@@ -24,10 +24,10 @@ export default function App() {
   });
 
   const screens = [
-    { component: TipCalculatorScreen, title: 'Total Tips', icon: '💰' },
+    { component: TipCalculatorScreen, title: 'Total', icon: '💰' },
     { component: BartenderEntryScreen, title: 'Bartenders', icon: '🍸' },
-    { component: SupportStaffScreen, title: 'Support Staff', icon: '🛠' },
-    { component: ResultsScreen, title: 'Results', icon: '📊' }
+    { component: SupportStaffScreen, title: 'Support', icon: '🛠' },
+    { component: ResultsScreen, title: 'Results', icon: '🎉' }
   ];
 
   const handleSwipe = (direction) => {
@@ -45,7 +45,7 @@ export default function App() {
       <StatusBar style="light" backgroundColor={theme.colors.background} />
       
       <SafeAreaView style={styles.safeArea}>
-        {/* Modern Header */}
+        {/* Minimal Header */}
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <Text style={styles.headerIcon}>{screens[currentScreen].icon}</Text>
@@ -63,7 +63,7 @@ export default function App() {
                     backgroundColor: index === currentScreen 
                       ? theme.colors.teal 
                       : theme.colors.surfaceSecondary,
-                    width: index === currentScreen ? 24 : 8,
+                    width: index === currentScreen ? 28 : 8,
                   }
                 ]}
               />
@@ -94,8 +94,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.lg,
     alignItems: 'center',
   },
   headerContent: {
@@ -103,13 +103,16 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.lg,
   },
   headerIcon: {
-    fontSize: 32,
-    marginBottom: theme.spacing.sm,
+    fontSize: 28,
+    marginBottom: theme.spacing.xs,
   },
   headerTitle: {
-    ...theme.typography.heading,
-    color: theme.colors.text,
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
     textAlign: 'center',
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   progressContainer: {
     flexDirection: 'row',
@@ -119,7 +122,6 @@ const styles = StyleSheet.create({
   progressDot: {
     height: 8,
     borderRadius: theme.borderRadius.circle,
-    transition: 'all 0.3s ease',
   },
   screenContainer: {
     flex: 1,
