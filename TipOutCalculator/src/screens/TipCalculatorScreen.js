@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import Keypad from '../components/Keypad';
+import PercentageSlider from '../components/PercentageSlider';
 import { theme, createButtonStyle, createCardStyle, createCircularButtonStyle } from '../theme';
 
 const { width } = Dimensions.get('window');
@@ -46,6 +47,13 @@ const TipCalculatorScreen = ({ tipData, setTipData, onNext }) => {
     onNext();
   };
 
+  const handlePercentageChange = (percentage) => {
+    setTipData(prev => ({
+      ...prev,
+      supportStaffPercentage: percentage
+    }));
+  };
+
   const formatCurrency = (value) => {
     const num = parseFloat(value) || 0;
     return `$${num.toLocaleString('en-US', { 
@@ -85,6 +93,18 @@ const TipCalculatorScreen = ({ tipData, setTipData, onNext }) => {
         </View>
       </View>
 
+      {/* Percentage Slider */}
+      <View style={styles.sliderContainer}>
+        <PercentageSlider
+          value={tipData.supportStaffPercentage}
+          onValueChange={handlePercentageChange}
+          min={0}
+          max={50}
+          step={5}
+          title="Support Staff Allocation"
+        />
+      </View>
+
       {/* Action Cards */}
       <View style={styles.actionsContainer}>
         <View style={styles.actionRow}>
@@ -111,17 +131,26 @@ const TipCalculatorScreen = ({ tipData, setTipData, onNext }) => {
         </View>
       </View>
 
-      {/* Category Preview */}
-      <View style={styles.categoryPreview}>
-        <View style={styles.categoryCard}>
-          <View style={styles.categoryIconContainer}>
-            <Text style={styles.categoryEmoji}>🍸</Text>
+      {/* Preview Cards */}
+      <View style={styles.previewContainer}>
+        <View style={styles.previewRow}>
+          <View style={styles.previewCard}>
+            <Text style={styles.previewEmoji}>🍸</Text>
+            <Text style={styles.previewTitle}>Bartenders</Text>
+            <Text style={styles.previewAmount}>
+              {formatCurrency((parseFloat(displayValue) || 0) * (100 - tipData.supportStaffPercentage) / 100)}
+            </Text>
+            <Text style={styles.previewPercentage}>{100 - tipData.supportStaffPercentage}%</Text>
           </View>
-          <View style={styles.categoryInfo}>
-            <Text style={styles.categoryTitle}>Bartender Pool</Text>
-            <Text style={styles.categorySubtitle}>80% of total tips</Text>
+          
+          <View style={styles.previewCard}>
+            <Text style={styles.previewEmoji}>🛠</Text>
+            <Text style={styles.previewTitle}>Support</Text>
+            <Text style={styles.previewAmount}>
+              {formatCurrency((parseFloat(displayValue) || 0) * tipData.supportStaffPercentage / 100)}
+            </Text>
+            <Text style={styles.previewPercentage}>{tipData.supportStaffPercentage}%</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
         </View>
       </View>
 
@@ -173,7 +202,7 @@ const styles = StyleSheet.create({
   displayContainer: {
     alignItems: 'center',
     paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.xxxl,
+    paddingVertical: theme.spacing.xl,
   },
   availableText: {
     ...theme.typography.caption,
@@ -185,7 +214,7 @@ const styles = StyleSheet.create({
     ...theme.typography.display,
     color: theme.colors.text,
     textAlign: 'center',
-    marginBottom: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
   },
   quickAmountsContainer: {
     flexDirection: 'row',
@@ -202,9 +231,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
+  sliderContainer: {
+    paddingHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.lg,
+  },
   actionsContainer: {
     paddingHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
   },
   actionRow: {
     flexDirection: 'row',
@@ -215,53 +248,52 @@ const styles = StyleSheet.create({
     ...createCardStyle('sm'),
     flex: 1,
     alignItems: 'center',
-    paddingVertical: theme.spacing.lg,
-    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.sm,
   },
   actionIconContainer: {
-    ...createCircularButtonStyle(48),
+    ...createCircularButtonStyle(40),
     backgroundColor: theme.colors.surfaceTertiary,
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
   },
   actionText: {
     ...theme.typography.footnote,
     color: theme.colors.textSecondary,
     textAlign: 'center',
   },
-  categoryPreview: {
+  previewContainer: {
     paddingHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
   },
-  categoryCard: {
-    ...createCardStyle('sm'),
+  previewRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.lg,
+    gap: theme.spacing.md,
   },
-  categoryIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: theme.borderRadius.md,
-    backgroundColor: theme.colors.surfaceSecondary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: theme.spacing.md,
-  },
-  categoryEmoji: {
-    fontSize: 24,
-  },
-  categoryInfo: {
+  previewCard: {
+    ...createCardStyle('sm'),
     flex: 1,
+    alignItems: 'center',
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.md,
   },
-  categoryTitle: {
-    ...theme.typography.body,
-    color: theme.colors.text,
-    marginBottom: 2,
+  previewEmoji: {
+    fontSize: 24,
+    marginBottom: theme.spacing.sm,
   },
-  categorySubtitle: {
+  previewTitle: {
     ...theme.typography.footnote,
     color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.xs,
+  },
+  previewAmount: {
+    ...theme.typography.body,
+    color: theme.colors.text,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  previewPercentage: {
+    ...theme.typography.footnote,
+    color: theme.colors.teal,
   },
   continueContainer: {
     paddingHorizontal: theme.spacing.lg,
