@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 import Keypad from '../components/Keypad';
+import { theme, createButtonStyle, createCardStyle, createCircularButtonStyle } from '../theme';
+
+const { width } = Dimensions.get('window');
 
 const TipCalculatorScreen = ({ tipData, setTipData, onNext }) => {
   const [displayValue, setDisplayValue] = useState(tipData.totalTips.toString());
 
   const handleNumberPress = (number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (displayValue === '0') {
       setDisplayValue(number);
     } else {
@@ -14,12 +21,14 @@ const TipCalculatorScreen = ({ tipData, setTipData, onNext }) => {
   };
 
   const handleDecimalPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (!displayValue.includes('.')) {
       setDisplayValue(displayValue + '.');
     }
   };
 
   const handleDeletePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (displayValue.length > 1) {
       setDisplayValue(displayValue.slice(0, -1));
     } else {
@@ -28,6 +37,7 @@ const TipCalculatorScreen = ({ tipData, setTipData, onNext }) => {
   };
 
   const handleSave = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const amount = parseFloat(displayValue) || 0;
     setTipData(prev => ({
       ...prev,
@@ -44,45 +54,108 @@ const TipCalculatorScreen = ({ tipData, setTipData, onNext }) => {
     })}`;
   };
 
+  const quickAmounts = [100, 250, 500, 1000];
+
+  const setQuickAmount = (amount) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setDisplayValue(amount.toString());
+  };
+
   return (
     <View style={styles.container}>
-      {/* Amount Display */}
+      {/* Main Amount Display */}
       <View style={styles.displayContainer}>
-        <Text style={styles.availableText}>Total Tips</Text>
+        <Text style={styles.availableText}>Total Tips for Tonight</Text>
         <Text style={styles.amountText}>
           {formatCurrency(displayValue)}
         </Text>
-      </View>
-
-      {/* Action Buttons */}
-      <View style={styles.actionsContainer}>
-        <TouchableOpacity style={styles.actionButton}>
-          <Text style={styles.actionIcon}>📝</Text>
-          <Text style={styles.actionText}>Note</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Category Section */}
-      <View style={styles.categoryContainer}>
-        <View style={styles.categoryItem}>
-          <View style={styles.categoryIcon}>
-            <Text style={styles.categoryEmoji}>🍸</Text>
-          </View>
-          <Text style={styles.categoryText}>Bartender Tips</Text>
+        
+        {/* Quick Amount Buttons */}
+        <View style={styles.quickAmountsContainer}>
+          {quickAmounts.map((amount) => (
+            <TouchableOpacity
+              key={amount}
+              style={styles.quickAmountButton}
+              onPress={() => setQuickAmount(amount)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.quickAmountText}>${amount}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
 
-      {/* Save Button */}
-      <View style={styles.saveContainer}>
+      {/* Action Cards */}
+      <View style={styles.actionsContainer}>
+        <View style={styles.actionRow}>
+          <TouchableOpacity style={styles.actionCard} activeOpacity={0.8}>
+            <View style={styles.actionIconContainer}>
+              <Ionicons name="document-text-outline" size={24} color={theme.colors.teal} />
+            </View>
+            <Text style={styles.actionText}>Notes</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.actionCard} activeOpacity={0.8}>
+            <View style={styles.actionIconContainer}>
+              <Ionicons name="calendar-outline" size={24} color={theme.colors.purple} />
+            </View>
+            <Text style={styles.actionText}>History</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.actionCard} activeOpacity={0.8}>
+            <View style={styles.actionIconContainer}>
+              <Ionicons name="share-outline" size={24} color={theme.colors.coral} />
+            </View>
+            <Text style={styles.actionText}>Share</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Category Preview */}
+      <View style={styles.categoryPreview}>
+        <View style={styles.categoryCard}>
+          <View style={styles.categoryIconContainer}>
+            <Text style={styles.categoryEmoji}>🍸</Text>
+          </View>
+          <View style={styles.categoryInfo}>
+            <Text style={styles.categoryTitle}>Bartender Pool</Text>
+            <Text style={styles.categorySubtitle}>80% of total tips</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+        </View>
+      </View>
+
+      {/* Continue Button */}
+      <View style={styles.continueContainer}>
         <TouchableOpacity 
-          style={styles.saveButton}
+          style={[styles.continueButton, parseFloat(displayValue) > 0 && styles.continueButtonActive]}
           onPress={handleSave}
+          disabled={parseFloat(displayValue) <= 0}
+          activeOpacity={0.8}
         >
-          <Text style={styles.saveButtonText}>Continue</Text>
+          <LinearGradient
+            colors={parseFloat(displayValue) > 0 
+              ? [theme.colors.teal, '#00B794'] 
+              : [theme.colors.surfaceSecondary, theme.colors.surfaceSecondary]
+            }
+            style={styles.continueButtonGradient}
+          >
+            <Text style={[
+              styles.continueButtonText,
+              parseFloat(displayValue) > 0 && styles.continueButtonTextActive
+            ]}>
+              Continue to Bartenders
+            </Text>
+            <Ionicons 
+              name="arrow-forward" 
+              size={20} 
+              color={parseFloat(displayValue) > 0 ? theme.colors.text : theme.colors.textSecondary} 
+            />
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
-      {/* Keypad */}
+      {/* Modern Keypad */}
       <Keypad
         onNumberPress={handleNumberPress}
         onDecimalPress={handleDecimalPress}
@@ -95,88 +168,128 @@ const TipCalculatorScreen = ({ tipData, setTipData, onNext }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginVertical: 10,
-    borderRadius: 20,
-    overflow: 'hidden',
+    backgroundColor: theme.colors.background,
   },
   displayContainer: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.xxxl,
   },
   availableText: {
-    fontSize: 16,
-    color: '#8E8E93',
-    marginBottom: 8,
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.md,
+    textAlign: 'center',
   },
   amountText: {
-    fontSize: 48,
-    fontWeight: '300',
-    color: '#000',
+    ...theme.typography.display,
+    color: theme.colors.text,
+    textAlign: 'center',
+    marginBottom: theme.spacing.xl,
+  },
+  quickAmountsContainer: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  quickAmountButton: {
+    ...createButtonStyle('secondary', 'sm'),
+    minWidth: 60,
+  },
+  quickAmountText: {
+    color: theme.colors.text,
+    fontSize: 14,
+    fontWeight: '500',
   },
   actionsContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.xl,
   },
-  actionButton: {
+  actionRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
+    justifyContent: 'space-between',
+    gap: theme.spacing.md,
   },
-  actionIcon: {
-    fontSize: 16,
-    marginRight: 8,
+  actionCard: {
+    ...createCardStyle('sm'),
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.md,
+  },
+  actionIconContainer: {
+    ...createCircularButtonStyle(48),
+    backgroundColor: theme.colors.surfaceTertiary,
+    marginBottom: theme.spacing.md,
   },
   actionText: {
-    fontSize: 16,
-    color: '#8E8E93',
+    ...theme.typography.footnote,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
   },
-  categoryContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+  categoryPreview: {
+    paddingHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.xl,
   },
-  categoryItem: {
+  categoryCard: {
+    ...createCardStyle('sm'),
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 15,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E5E7',
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.lg,
   },
-  categoryIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: '#F2F2F7',
+  categoryIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.surfaceSecondary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+    marginRight: theme.spacing.md,
   },
   categoryEmoji: {
-    fontSize: 20,
+    fontSize: 24,
   },
-  categoryText: {
-    fontSize: 17,
-    color: '#000',
+  categoryInfo: {
     flex: 1,
   },
-  saveContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+  categoryTitle: {
+    ...theme.typography.body,
+    color: theme.colors.text,
+    marginBottom: 2,
   },
-  saveButton: {
-    backgroundColor: '#000',
-    borderRadius: 25,
-    paddingVertical: 15,
+  categorySubtitle: {
+    ...theme.typography.footnote,
+    color: theme.colors.textSecondary,
+  },
+  continueContainer: {
+    paddingHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.lg,
+  },
+  continueButton: {
+    borderRadius: theme.borderRadius.pill,
+    overflow: 'hidden',
+  },
+  continueButtonGradient: {
+    ...createButtonStyle('primary', 'lg'),
+    backgroundColor: 'transparent',
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: theme.spacing.sm,
   },
-  saveButtonText: {
-    color: '#FFFFFF',
-    fontSize: 17,
+  continueButtonText: {
+    ...theme.typography.body,
     fontWeight: '600',
+    color: theme.colors.textSecondary,
+    flex: 1,
+    textAlign: 'center',
+  },
+  continueButtonTextActive: {
+    color: theme.colors.text,
+  },
+  continueButtonActive: {
+    ...theme.shadows.md,
   },
 });
 

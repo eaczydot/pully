@@ -8,7 +8,11 @@ import {
   ScrollView,
   Alert 
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 import Keypad from '../components/Keypad';
+import { theme, createButtonStyle, createCardStyle, createCircularButtonStyle } from '../theme';
 
 const BartenderEntryScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
   const [currentBartender, setCurrentBartender] = useState(0);
@@ -17,6 +21,7 @@ const BartenderEntryScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
   const [hoursInput, setHoursInput] = useState('0');
 
   const addNewBartender = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const newBartender = {
       id: Date.now(),
       name: '',
@@ -59,6 +64,8 @@ const BartenderEntryScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
   };
 
   const saveBartender = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
     if (!nameInput.trim()) {
       Alert.alert('Error', 'Please enter a name for the bartender');
       return;
@@ -86,6 +93,7 @@ const BartenderEntryScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
   };
 
   const deleteBartender = (index) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setTipData(prev => ({
       ...prev,
       bartenders: prev.bartenders.filter((_, i) => i !== index)
@@ -95,36 +103,51 @@ const BartenderEntryScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
     }
   };
 
+  const editBartender = (index) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const bartender = tipData.bartenders[index];
+    setCurrentBartender(index);
+    setNameInput(bartender.name);
+    setHoursInput(bartender.hours.toString());
+    setEntryMode('name');
+  };
+
   const currentBartenderData = tipData.bartenders[currentBartender];
   const totalHours = tipData.bartenders.reduce((sum, b) => sum + b.hours, 0);
+  const completedBartenders = tipData.bartenders.filter(b => b.name && b.hours > 0);
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onPrevious} style={styles.backButton}>
-          <Text style={styles.backButtonText}>←</Text>
+          <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          Bartender {currentBartender + 1}
-        </Text>
+        
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Bartender Entry</Text>
+          <Text style={styles.headerSubtitle}>
+            {completedBartenders.length} of {tipData.bartenders.length || 1} entered
+          </Text>
+        </View>
+        
         <TouchableOpacity onPress={addNewBartender} style={styles.addButton}>
-          <Text style={styles.addButtonText}>+</Text>
+          <Ionicons name="add" size={24} color={theme.colors.teal} />
         </TouchableOpacity>
       </View>
 
-      {/* Current Bartender Display */}
-      <View style={styles.displayContainer}>
+      {/* Entry Section */}
+      <View style={styles.entrySection}>
         {entryMode === 'name' ? (
           <View style={styles.nameEntry}>
-            <Text style={styles.labelText}>Bartender Name</Text>
+            <Text style={styles.entryLabel}>Bartender Name</Text>
             <TextInput
               style={styles.nameInput}
               value={nameInput}
               onChangeText={setNameInput}
-              placeholder="Enter name"
-              placeholderTextColor="#8E8E93"
-              autoFocus
+              placeholder="Enter bartender name"
+              placeholderTextColor={theme.colors.textSecondary}
+              autoFocus={!nameInput}
               returnKeyType="next"
               onSubmitEditing={() => {
                 if (nameInput.trim()) {
@@ -132,58 +155,112 @@ const BartenderEntryScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
                 }
               }}
             />
+            
             {nameInput.trim() && (
               <TouchableOpacity 
                 style={styles.continueButton}
                 onPress={() => setEntryMode('hours')}
               >
-                <Text style={styles.continueButtonText}>Set Hours</Text>
+                <LinearGradient
+                  colors={[theme.colors.teal, '#00B794']}
+                  style={styles.continueButtonGradient}
+                >
+                  <Text style={styles.continueButtonText}>Set Hours</Text>
+                  <Ionicons name="arrow-forward" size={18} color={theme.colors.text} />
+                </LinearGradient>
               </TouchableOpacity>
             )}
           </View>
         ) : (
           <View style={styles.hoursEntry}>
-            <Text style={styles.labelText}>Hours Worked</Text>
+            <Text style={styles.entryLabel}>Hours Worked</Text>
             <Text style={styles.nameDisplay}>{nameInput}</Text>
             <Text style={styles.hoursDisplay}>{hoursInput} hours</Text>
+            
             <TouchableOpacity 
               style={styles.saveButton}
               onPress={saveBartender}
             >
-              <Text style={styles.saveButtonText}>Save Bartender</Text>
+              <LinearGradient
+                colors={[theme.colors.success, '#2EAD4A']}
+                style={styles.saveButtonGradient}
+              >
+                <Ionicons name="checkmark" size={20} color={theme.colors.text} />
+                <Text style={styles.saveButtonText}>Save Bartender</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         )}
       </View>
 
       {/* Bartender List */}
-      <ScrollView style={styles.listContainer}>
+      <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
+        <View style={styles.listHeader}>
+          <Text style={styles.listTitle}>Added Bartenders</Text>
+          {totalHours > 0 && (
+            <Text style={styles.totalHours}>Total: {totalHours} hours</Text>
+          )}
+        </View>
+        
         {tipData.bartenders.map((bartender, index) => (
-          <View key={bartender.id} style={styles.bartenderItem}>
-            <View style={styles.bartenderInfo}>
-              <Text style={styles.bartenderName}>{bartender.name}</Text>
-              <Text style={styles.bartenderHours}>{bartender.hours} hours</Text>
-              {totalHours > 0 && (
-                <Text style={styles.bartenderPercentage}>
-                  {((bartender.hours / totalHours) * 100).toFixed(1)}%
-                </Text>
-              )}
-            </View>
+          <View key={bartender.id} style={styles.bartenderCard}>
             <TouchableOpacity 
-              onPress={() => deleteBartender(index)}
-              style={styles.deleteButton}
+              style={styles.bartenderContent}
+              onPress={() => editBartender(index)}
+              activeOpacity={0.7}
             >
-              <Text style={styles.deleteButtonText}>×</Text>
+              <View style={styles.bartenderInfo}>
+                <Text style={styles.bartenderName}>
+                  {bartender.name || 'Unnamed Bartender'}
+                </Text>
+                <Text style={styles.bartenderDetails}>
+                  {bartender.hours} hours
+                  {totalHours > 0 && (
+                    <Text style={styles.bartenderPercentage}>
+                      {' • '}{((bartender.hours / totalHours) * 100).toFixed(1)}%
+                    </Text>
+                  )}
+                </Text>
+              </View>
+              
+              <View style={styles.bartenderActions}>
+                <TouchableOpacity 
+                  onPress={() => editBartender(index)}
+                  style={styles.editButton}
+                >
+                  <Ionicons name="pencil" size={16} color={theme.colors.textSecondary} />
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  onPress={() => deleteBartender(index)}
+                  style={styles.deleteButton}
+                >
+                  <Ionicons name="trash-outline" size={16} color={theme.colors.error} />
+                </TouchableOpacity>
+              </View>
             </TouchableOpacity>
           </View>
         ))}
+        
+        {tipData.bartenders.length === 0 && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateEmoji}>👋</Text>
+            <Text style={styles.emptyStateText}>Add your first bartender to get started</Text>
+          </View>
+        )}
       </ScrollView>
 
       {/* Continue Button */}
-      {tipData.bartenders.length > 0 && tipData.bartenders.every(b => b.name && b.hours > 0) && (
+      {completedBartenders.length > 0 && (
         <View style={styles.bottomContainer}>
           <TouchableOpacity style={styles.continueMainButton} onPress={onNext}>
-            <Text style={styles.continueMainButtonText}>Continue to Support Staff</Text>
+            <LinearGradient
+              colors={[theme.colors.teal, '#00B794']}
+              style={styles.continueMainButtonGradient}
+            >
+              <Text style={styles.continueMainButtonText}>Continue to Support Staff</Text>
+              <Ionicons name="arrow-forward" size={20} color={theme.colors.text} />
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       )}
@@ -203,49 +280,39 @@ const BartenderEntryScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginVertical: 10,
-    borderRadius: 20,
-    overflow: 'hidden',
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5E7',
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.lg,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    ...createCircularButtonStyle(40),
+    backgroundColor: theme.colors.surfaceSecondary,
   },
-  backButtonText: {
-    fontSize: 24,
-    color: '#007AFF',
+  headerCenter: {
+    alignItems: 'center',
+    flex: 1,
   },
   headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#000',
+    ...theme.typography.heading,
+    color: theme.colors.text,
+  },
+  headerSubtitle: {
+    ...theme.typography.footnote,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
   },
   addButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    ...createCircularButtonStyle(40),
+    backgroundColor: theme.colors.surfaceSecondary,
   },
-  addButtonText: {
-    fontSize: 28,
-    color: '#007AFF',
-  },
-  displayContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 30,
+  entrySection: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.xl,
     alignItems: 'center',
   },
   nameEntry: {
@@ -256,110 +323,163 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
   },
-  labelText: {
-    fontSize: 16,
-    color: '#8E8E93',
-    marginBottom: 15,
+  entryLabel: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.lg,
   },
   nameInput: {
-    fontSize: 24,
-    fontWeight: '300',
-    color: '#000',
+    ...theme.typography.title,
+    color: theme.colors.text,
     textAlign: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
-    paddingVertical: 10,
-    minWidth: 200,
-    marginBottom: 20,
+    backgroundColor: theme.colors.surfaceSecondary,
+    borderRadius: theme.borderRadius.md,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    minWidth: 250,
+    marginBottom: theme.spacing.xl,
   },
   nameDisplay: {
-    fontSize: 20,
-    fontWeight: '500',
-    color: '#000',
-    marginBottom: 10,
+    ...theme.typography.heading,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.md,
   },
   hoursDisplay: {
-    fontSize: 36,
-    fontWeight: '300',
-    color: '#000',
-    marginBottom: 20,
+    ...theme.typography.display,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.xl,
   },
   continueButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 20,
-    paddingHorizontal: 30,
-    paddingVertical: 12,
+    borderRadius: theme.borderRadius.pill,
+    overflow: 'hidden',
+    ...theme.shadows.sm,
+  },
+  continueButtonGradient: {
+    ...createButtonStyle('primary', 'md'),
+    backgroundColor: 'transparent',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
   },
   continueButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    ...theme.typography.body,
+    color: theme.colors.text,
     fontWeight: '600',
   },
   saveButton: {
-    backgroundColor: '#34C759',
-    borderRadius: 20,
-    paddingHorizontal: 30,
-    paddingVertical: 12,
+    borderRadius: theme.borderRadius.pill,
+    overflow: 'hidden',
+    ...theme.shadows.sm,
+  },
+  saveButtonGradient: {
+    ...createButtonStyle('success', 'lg'),
+    backgroundColor: 'transparent',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
   },
   saveButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    ...theme.typography.body,
+    color: theme.colors.text,
     fontWeight: '600',
   },
   listContainer: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: theme.spacing.lg,
   },
-  bartenderItem: {
+  listHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5E7',
+    marginBottom: theme.spacing.lg,
+  },
+  listTitle: {
+    ...theme.typography.body,
+    color: theme.colors.text,
+    fontWeight: '600',
+  },
+  totalHours: {
+    ...theme.typography.footnote,
+    color: theme.colors.textSecondary,
+    backgroundColor: theme.colors.surfaceSecondary,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.borderRadius.pill,
+  },
+  bartenderCard: {
+    ...createCardStyle('sm'),
+    marginBottom: theme.spacing.md,
+    overflow: 'hidden',
+  },
+  bartenderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
   },
   bartenderInfo: {
     flex: 1,
   },
   bartenderName: {
-    fontSize: 17,
-    fontWeight: '500',
-    color: '#000',
+    ...theme.typography.body,
+    color: theme.colors.text,
+    fontWeight: '600',
+    marginBottom: 2,
   },
-  bartenderHours: {
-    fontSize: 15,
-    color: '#8E8E93',
-    marginTop: 2,
+  bartenderDetails: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
   },
   bartenderPercentage: {
-    fontSize: 13,
-    color: '#007AFF',
-    marginTop: 2,
+    color: theme.colors.teal,
+  },
+  bartenderActions: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+  },
+  editButton: {
+    ...createCircularButtonStyle(32),
+    backgroundColor: theme.colors.surfaceTertiary,
   },
   deleteButton: {
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
+    ...createCircularButtonStyle(32),
+    backgroundColor: theme.colors.surfaceTertiary,
   },
-  deleteButtonText: {
-    fontSize: 24,
-    color: '#FF3B30',
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.xxxl,
+  },
+  emptyStateEmoji: {
+    fontSize: 48,
+    marginBottom: theme.spacing.md,
+  },
+  emptyStateText: {
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
   },
   bottomContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.xl,
   },
   continueMainButton: {
-    backgroundColor: '#000',
-    borderRadius: 25,
-    paddingVertical: 15,
+    borderRadius: theme.borderRadius.pill,
+    overflow: 'hidden',
+    ...theme.shadows.md,
+  },
+  continueMainButtonGradient: {
+    ...createButtonStyle('primary', 'lg'),
+    backgroundColor: 'transparent',
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: theme.spacing.sm,
   },
   continueMainButtonText: {
-    color: '#FFFFFF',
-    fontSize: 17,
+    ...theme.typography.body,
+    color: theme.colors.text,
     fontWeight: '600',
+    flex: 1,
+    textAlign: 'center',
   },
 });
 

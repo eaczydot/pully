@@ -8,7 +8,11 @@ import {
   ScrollView,
   Alert 
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 import Keypad from '../components/Keypad';
+import { theme, createButtonStyle, createCardStyle, createCircularButtonStyle } from '../theme';
 
 const SupportStaffScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
   const [currentStaff, setCurrentStaff] = useState(0);
@@ -17,6 +21,7 @@ const SupportStaffScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
   const [hoursInput, setHoursInput] = useState('0');
 
   const addNewStaff = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const newStaff = {
       id: Date.now(),
       name: '',
@@ -59,6 +64,8 @@ const SupportStaffScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
   };
 
   const saveStaff = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
     if (!nameInput.trim()) {
       Alert.alert('Error', 'Please enter a name for the support staff');
       return;
@@ -86,6 +93,7 @@ const SupportStaffScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
   };
 
   const deleteStaff = (index) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setTipData(prev => ({
       ...prev,
       supportStaff: prev.supportStaff.filter((_, i) => i !== index)
@@ -95,43 +103,67 @@ const SupportStaffScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
     }
   };
 
+  const editStaff = (index) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const staff = tipData.supportStaff[index];
+    setCurrentStaff(index);
+    setNameInput(staff.name);
+    setHoursInput(staff.hours.toString());
+    setEntryMode('name');
+  };
+
   const totalHours = tipData.supportStaff.reduce((sum, s) => sum + s.hours, 0);
   const supportTipPool = tipData.totalTips * (tipData.supportStaffPercentage / 100);
+  const completedStaff = tipData.supportStaff.filter(s => s.name && s.hours > 0);
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onPrevious} style={styles.backButton}>
-          <Text style={styles.backButtonText}>←</Text>
+          <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          Support Staff {currentStaff + 1}
-        </Text>
+        
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Support Staff</Text>
+          <Text style={styles.headerSubtitle}>
+            {completedStaff.length} of {tipData.supportStaff.length || 1} entered
+          </Text>
+        </View>
+        
         <TouchableOpacity onPress={addNewStaff} style={styles.addButton}>
-          <Text style={styles.addButtonText}>+</Text>
+          <Ionicons name="add" size={24} color={theme.colors.purple} />
         </TouchableOpacity>
       </View>
 
       {/* Support Staff Pool Info */}
       <View style={styles.poolInfo}>
-        <Text style={styles.poolText}>
-          Support Staff Pool: ${supportTipPool.toFixed(2)} ({tipData.supportStaffPercentage}% of total)
-        </Text>
+        <LinearGradient
+          colors={[theme.colors.purple, '#574BCE']}
+          style={styles.poolInfoGradient}
+        >
+          <Text style={styles.poolInfoLabel}>Support Staff Pool</Text>
+          <Text style={styles.poolInfoAmount}>
+            ${supportTipPool.toFixed(2)}
+          </Text>
+          <Text style={styles.poolInfoPercentage}>
+            {tipData.supportStaffPercentage}% of total tips
+          </Text>
+        </LinearGradient>
       </View>
 
-      {/* Current Staff Display */}
-      <View style={styles.displayContainer}>
+      {/* Entry Section */}
+      <View style={styles.entrySection}>
         {entryMode === 'name' ? (
           <View style={styles.nameEntry}>
-            <Text style={styles.labelText}>Support Staff Name</Text>
+            <Text style={styles.entryLabel}>Support Staff Name</Text>
             <TextInput
               style={styles.nameInput}
               value={nameInput}
               onChangeText={setNameInput}
-              placeholder="Enter name"
-              placeholderTextColor="#8E8E93"
-              autoFocus
+              placeholder="Enter staff name"
+              placeholderTextColor={theme.colors.textSecondary}
+              autoFocus={!nameInput}
               returnKeyType="next"
               onSubmitEditing={() => {
                 if (nameInput.trim()) {
@@ -139,60 +171,126 @@ const SupportStaffScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
                 }
               }}
             />
+            
             {nameInput.trim() && (
               <TouchableOpacity 
                 style={styles.continueButton}
                 onPress={() => setEntryMode('hours')}
               >
-                <Text style={styles.continueButtonText}>Set Hours</Text>
+                <LinearGradient
+                  colors={[theme.colors.purple, '#574BCE']}
+                  style={styles.continueButtonGradient}
+                >
+                  <Text style={styles.continueButtonText}>Set Hours</Text>
+                  <Ionicons name="arrow-forward" size={18} color={theme.colors.text} />
+                </LinearGradient>
               </TouchableOpacity>
             )}
           </View>
         ) : (
           <View style={styles.hoursEntry}>
-            <Text style={styles.labelText}>Hours Worked</Text>
+            <Text style={styles.entryLabel}>Hours Worked</Text>
             <Text style={styles.nameDisplay}>{nameInput}</Text>
             <Text style={styles.hoursDisplay}>{hoursInput} hours</Text>
+            
             <TouchableOpacity 
               style={styles.saveButton}
               onPress={saveStaff}
             >
-              <Text style={styles.saveButtonText}>Save Support Staff</Text>
+              <LinearGradient
+                colors={[theme.colors.success, '#2EAD4A']}
+                style={styles.saveButtonGradient}
+              >
+                <Ionicons name="checkmark" size={20} color={theme.colors.text} />
+                <Text style={styles.saveButtonText}>Save Support Staff</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         )}
       </View>
 
       {/* Support Staff List */}
-      <ScrollView style={styles.listContainer}>
+      <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
+        <View style={styles.listHeader}>
+          <Text style={styles.listTitle}>Added Support Staff</Text>
+          {totalHours > 0 && (
+            <Text style={styles.totalHours}>Total: {totalHours} hours</Text>
+          )}
+        </View>
+        
         {tipData.supportStaff.map((staff, index) => {
           const percentage = totalHours > 0 ? (staff.hours / totalHours) * 100 : 0;
           const tipAmount = supportTipPool * (percentage / 100);
           
           return (
-            <View key={staff.id} style={styles.staffItem}>
-              <View style={styles.staffInfo}>
-                <Text style={styles.staffName}>{staff.name}</Text>
-                <Text style={styles.staffHours}>{staff.hours} hours</Text>
-                <Text style={styles.staffPercentage}>
-                  {percentage.toFixed(1)}% • ${tipAmount.toFixed(2)}
-                </Text>
-              </View>
+            <View key={staff.id} style={styles.staffCard}>
               <TouchableOpacity 
-                onPress={() => deleteStaff(index)}
-                style={styles.deleteButton}
+                style={styles.staffContent}
+                onPress={() => editStaff(index)}
+                activeOpacity={0.7}
               >
-                <Text style={styles.deleteButtonText}>×</Text>
+                <View style={styles.staffInfo}>
+                  <Text style={styles.staffName}>
+                    {staff.name || 'Unnamed Staff'}
+                  </Text>
+                  <Text style={styles.staffDetails}>
+                    {staff.hours} hours
+                    {totalHours > 0 && (
+                      <Text style={styles.staffPercentage}>
+                        {' • '}{percentage.toFixed(1)}%
+                      </Text>
+                    )}
+                  </Text>
+                  {tipAmount > 0 && (
+                    <Text style={styles.staffTipAmount}>
+                      ${tipAmount.toFixed(2)}
+                    </Text>
+                  )}
+                </View>
+                
+                <View style={styles.staffActions}>
+                  <TouchableOpacity 
+                    onPress={() => editStaff(index)}
+                    style={styles.editButton}
+                  >
+                    <Ionicons name="pencil" size={16} color={theme.colors.textSecondary} />
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    onPress={() => deleteStaff(index)}
+                    style={styles.deleteButton}
+                  >
+                    <Ionicons name="trash-outline" size={16} color={theme.colors.error} />
+                  </TouchableOpacity>
+                </View>
               </TouchableOpacity>
             </View>
           );
         })}
+        
+        {tipData.supportStaff.length === 0 && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateEmoji}>🛠</Text>
+            <Text style={styles.emptyStateText}>
+              Add support staff to distribute tips
+            </Text>
+            <Text style={styles.emptyStateSubtext}>
+              Support staff are optional
+            </Text>
+          </View>
+        )}
       </ScrollView>
 
       {/* Continue Button */}
       <View style={styles.bottomContainer}>
         <TouchableOpacity style={styles.continueMainButton} onPress={onNext}>
-          <Text style={styles.continueMainButtonText}>Calculate Results</Text>
+          <LinearGradient
+            colors={[theme.colors.teal, '#00B794']}
+            style={styles.continueMainButtonGradient}
+          >
+            <Text style={styles.continueMainButtonText}>Calculate Results</Text>
+            <Ionicons name="calculator" size={20} color={theme.colors.text} />
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
@@ -211,61 +309,67 @@ const SupportStaffScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginVertical: 10,
-    borderRadius: 20,
-    overflow: 'hidden',
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5E7',
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.lg,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    ...createCircularButtonStyle(40),
+    backgroundColor: theme.colors.surfaceSecondary,
   },
-  backButtonText: {
-    fontSize: 24,
-    color: '#007AFF',
+  headerCenter: {
+    alignItems: 'center',
+    flex: 1,
   },
   headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#000',
+    ...theme.typography.heading,
+    color: theme.colors.text,
+  },
+  headerSubtitle: {
+    ...theme.typography.footnote,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
   },
   addButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addButtonText: {
-    fontSize: 28,
-    color: '#007AFF',
+    ...createCircularButtonStyle(40),
+    backgroundColor: theme.colors.surfaceSecondary,
   },
   poolInfo: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#F2F2F7',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5E7',
+    marginHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.xl,
+    borderRadius: theme.borderRadius.xl,
+    overflow: 'hidden',
+    ...theme.shadows.md,
   },
-  poolText: {
-    fontSize: 15,
-    color: '#8E8E93',
-    textAlign: 'center',
+  poolInfoGradient: {
+    padding: theme.spacing.lg,
+    alignItems: 'center',
   },
-  displayContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 30,
+  poolInfoLabel: {
+    ...theme.typography.footnote,
+    color: theme.colors.text,
+    opacity: 0.8,
+    marginBottom: theme.spacing.xs,
+  },
+  poolInfoAmount: {
+    ...theme.typography.title,
+    color: theme.colors.text,
+    fontWeight: '700',
+    marginBottom: theme.spacing.xs,
+  },
+  poolInfoPercentage: {
+    ...theme.typography.footnote,
+    color: theme.colors.text,
+    opacity: 0.9,
+  },
+  entrySection: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.lg,
     alignItems: 'center',
   },
   nameEntry: {
@@ -276,110 +380,175 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
   },
-  labelText: {
-    fontSize: 16,
-    color: '#8E8E93',
-    marginBottom: 15,
+  entryLabel: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.lg,
   },
   nameInput: {
-    fontSize: 24,
-    fontWeight: '300',
-    color: '#000',
+    ...theme.typography.title,
+    color: theme.colors.text,
     textAlign: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
-    paddingVertical: 10,
-    minWidth: 200,
-    marginBottom: 20,
+    backgroundColor: theme.colors.surfaceSecondary,
+    borderRadius: theme.borderRadius.md,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    minWidth: 250,
+    marginBottom: theme.spacing.xl,
   },
   nameDisplay: {
-    fontSize: 20,
-    fontWeight: '500',
-    color: '#000',
-    marginBottom: 10,
+    ...theme.typography.heading,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.md,
   },
   hoursDisplay: {
-    fontSize: 36,
-    fontWeight: '300',
-    color: '#000',
-    marginBottom: 20,
+    ...theme.typography.display,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.xl,
   },
   continueButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 20,
-    paddingHorizontal: 30,
-    paddingVertical: 12,
+    borderRadius: theme.borderRadius.pill,
+    overflow: 'hidden',
+    ...theme.shadows.sm,
+  },
+  continueButtonGradient: {
+    ...createButtonStyle('primary', 'md'),
+    backgroundColor: 'transparent',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
   },
   continueButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    ...theme.typography.body,
+    color: theme.colors.text,
     fontWeight: '600',
   },
   saveButton: {
-    backgroundColor: '#34C759',
-    borderRadius: 20,
-    paddingHorizontal: 30,
-    paddingVertical: 12,
+    borderRadius: theme.borderRadius.pill,
+    overflow: 'hidden',
+    ...theme.shadows.sm,
+  },
+  saveButtonGradient: {
+    ...createButtonStyle('success', 'lg'),
+    backgroundColor: 'transparent',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
   },
   saveButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    ...theme.typography.body,
+    color: theme.colors.text,
     fontWeight: '600',
   },
   listContainer: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: theme.spacing.lg,
   },
-  staffItem: {
+  listHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5E7',
+    marginBottom: theme.spacing.lg,
+  },
+  listTitle: {
+    ...theme.typography.body,
+    color: theme.colors.text,
+    fontWeight: '600',
+  },
+  totalHours: {
+    ...theme.typography.footnote,
+    color: theme.colors.textSecondary,
+    backgroundColor: theme.colors.surfaceSecondary,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.borderRadius.pill,
+  },
+  staffCard: {
+    ...createCardStyle('sm'),
+    marginBottom: theme.spacing.md,
+    overflow: 'hidden',
+  },
+  staffContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
   },
   staffInfo: {
     flex: 1,
   },
   staffName: {
-    fontSize: 17,
-    fontWeight: '500',
-    color: '#000',
+    ...theme.typography.body,
+    color: theme.colors.text,
+    fontWeight: '600',
+    marginBottom: 2,
   },
-  staffHours: {
-    fontSize: 15,
-    color: '#8E8E93',
-    marginTop: 2,
+  staffDetails: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    marginBottom: 2,
   },
   staffPercentage: {
-    fontSize: 13,
-    color: '#FF9500',
-    marginTop: 2,
+    color: theme.colors.purple,
+  },
+  staffTipAmount: {
+    ...theme.typography.footnote,
+    color: theme.colors.success,
+    fontWeight: '600',
+  },
+  staffActions: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+  },
+  editButton: {
+    ...createCircularButtonStyle(32),
+    backgroundColor: theme.colors.surfaceTertiary,
   },
   deleteButton: {
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
+    ...createCircularButtonStyle(32),
+    backgroundColor: theme.colors.surfaceTertiary,
   },
-  deleteButtonText: {
-    fontSize: 24,
-    color: '#FF3B30',
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.xxxl,
+  },
+  emptyStateEmoji: {
+    fontSize: 48,
+    marginBottom: theme.spacing.md,
+  },
+  emptyStateText: {
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: theme.spacing.xs,
+  },
+  emptyStateSubtext: {
+    ...theme.typography.footnote,
+    color: theme.colors.textTertiary,
+    textAlign: 'center',
   },
   bottomContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.xl,
   },
   continueMainButton: {
-    backgroundColor: '#000',
-    borderRadius: 25,
-    paddingVertical: 15,
+    borderRadius: theme.borderRadius.pill,
+    overflow: 'hidden',
+    ...theme.shadows.md,
+  },
+  continueMainButtonGradient: {
+    ...createButtonStyle('primary', 'lg'),
+    backgroundColor: 'transparent',
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: theme.spacing.sm,
   },
   continueMainButtonText: {
-    color: '#FFFFFF',
-    fontSize: 17,
+    ...theme.typography.body,
+    color: theme.colors.text,
     fontWeight: '600',
+    flex: 1,
+    textAlign: 'center',
   },
 });
 
