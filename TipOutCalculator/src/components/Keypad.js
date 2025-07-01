@@ -1,5 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
+import { theme, createCircularButtonStyle } from '../theme';
 
 const { width } = Dimensions.get('window');
 
@@ -12,6 +15,8 @@ const Keypad = ({ onNumberPress, onDecimalPress, onDeletePress, showDecimal = tr
   ];
 
   const handlePress = (value) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
     if (value === '⌫') {
       onDeletePress();
     } else if (value === '.') {
@@ -21,29 +26,53 @@ const Keypad = ({ onNumberPress, onDecimalPress, onDeletePress, showDecimal = tr
     }
   };
 
+  const renderButton = (button, rowIndex, buttonIndex) => {
+    const isNumber = !isNaN(button) || button === '.';
+    const isDelete = button === '⌫';
+    const isEmpty = button === '';
+    
+    return (
+      <TouchableOpacity
+        key={buttonIndex}
+        style={[
+          styles.button,
+          isEmpty && styles.invisibleButton,
+          isDelete && styles.deleteButton,
+        ]}
+        onPress={() => handlePress(button)}
+        disabled={isEmpty}
+        activeOpacity={0.3}
+      >
+        <View style={[
+          styles.buttonContent,
+          isDelete && styles.deleteButtonContent,
+        ]}>
+          {isDelete ? (
+            <Ionicons 
+              name="backspace-outline" 
+              size={28} 
+              color={theme.colors.textSecondary} 
+            />
+          ) : (
+            <Text style={[
+              styles.buttonText,
+              isDelete && styles.deleteButtonText
+            ]}>
+              {button}
+            </Text>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <View style={styles.container}>
       {buttons.map((row, rowIndex) => (
         <View key={rowIndex} style={styles.row}>
-          {row.map((button, buttonIndex) => (
-            <TouchableOpacity
-              key={buttonIndex}
-              style={[
-                styles.button,
-                button === '' && styles.invisibleButton
-              ]}
-              onPress={() => handlePress(button)}
-              disabled={button === ''}
-              activeOpacity={0.2}
-            >
-              <Text style={[
-                styles.buttonText,
-                button === '⌫' && styles.deleteButtonText
-              ]}>
-                {button}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {row.map((button, buttonIndex) => 
+            renderButton(button, rowIndex, buttonIndex)
+          )}
         </View>
       ))}
     </View>
@@ -52,32 +81,49 @@ const Keypad = ({ onNumberPress, onDecimalPress, onDeletePress, showDecimal = tr
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.xl,
+    backgroundColor: theme.colors.background,
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 15,
+    marginBottom: theme.spacing.lg,
   },
   button: {
-    width: (width - 80) / 3,
-    height: 60,
+    width: (width - (theme.spacing.lg * 2) - (theme.spacing.lg * 2)) / 3,
+    height: 70,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+  },
+  buttonContent: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: theme.colors.surfaceSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...theme.shadows.sm,
+  },
+  deleteButton: {
+    // Delete button specific styles
+  },
+  deleteButtonContent: {
+    backgroundColor: theme.colors.surfaceTertiary,
   },
   invisibleButton: {
     opacity: 0,
+    pointerEvents: 'none',
   },
   buttonText: {
-    fontSize: 32,
+    ...theme.typography.title,
+    color: theme.colors.text,
     fontWeight: '300',
-    color: '#000',
   },
   deleteButtonText: {
     fontSize: 24,
     fontWeight: '400',
+    color: theme.colors.textSecondary,
   },
 });
 

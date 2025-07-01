@@ -7,14 +7,12 @@ import {
   SafeAreaView,
   TouchableOpacity
 } from 'react-native';
-// import { PanGestureHandler } from 'react-native-gesture-handler';
-// import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { LinearGradient } from 'expo-linear-gradient';
 import TipCalculatorScreen from './src/screens/TipCalculatorScreen';
 import BartenderEntryScreen from './src/screens/BartenderEntryScreen';
 import SupportStaffScreen from './src/screens/SupportStaffScreen';
 import ResultsScreen from './src/screens/ResultsScreen';
-
-
+import { theme } from './src/theme';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState(0);
@@ -26,10 +24,10 @@ export default function App() {
   });
 
   const screens = [
-    { component: TipCalculatorScreen, title: 'Total Tips' },
-    { component: BartenderEntryScreen, title: 'Bartenders' },
-    { component: SupportStaffScreen, title: 'Support Staff' },
-    { component: ResultsScreen, title: 'Results' }
+    { component: TipCalculatorScreen, title: 'Total Tips', icon: '💰' },
+    { component: BartenderEntryScreen, title: 'Bartenders', icon: '🍸' },
+    { component: SupportStaffScreen, title: 'Support Staff', icon: '🛠' },
+    { component: ResultsScreen, title: 'Results', icon: '📊' }
   ];
 
   const handleSwipe = (direction) => {
@@ -44,42 +42,33 @@ export default function App() {
 
   return (
     <View style={styles.container}>
+      <StatusBar style="light" backgroundColor={theme.colors.background} />
+      
       <SafeAreaView style={styles.safeArea}>
-        <StatusBar style="dark" />
-        
-        {/* Header */}
+        {/* Modern Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>{screens[currentScreen].title}</Text>
-          <View style={styles.progressDots}>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerIcon}>{screens[currentScreen].icon}</Text>
+            <Text style={styles.headerTitle}>{screens[currentScreen].title}</Text>
+          </View>
+          
+          {/* Progress Indicators */}
+          <View style={styles.progressContainer}>
             {screens.map((_, index) => (
               <View
                 key={index}
                 style={[
-                  styles.dot,
-                  { backgroundColor: index === currentScreen ? '#000' : '#E5E5E7' }
+                  styles.progressDot,
+                  { 
+                    backgroundColor: index === currentScreen 
+                      ? theme.colors.teal 
+                      : theme.colors.surfaceSecondary,
+                    width: index === currentScreen ? 24 : 8,
+                  }
                 ]}
               />
             ))}
           </View>
-        </View>
-
-        {/* Navigation Buttons */}
-        <View style={styles.navigationContainer}>
-          <TouchableOpacity 
-            style={[styles.navButton, currentScreen === 0 && styles.navButtonDisabled]}
-            onPress={() => handleSwipe('right')}
-            disabled={currentScreen === 0}
-          >
-            <Text style={styles.navButtonText}>← Previous</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.navButton, currentScreen === screens.length - 1 && styles.navButtonDisabled]}
-            onPress={() => handleSwipe('left')}
-            disabled={currentScreen === screens.length - 1}
-          >
-            <Text style={styles.navButtonText}>Next →</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Main Content */}
@@ -99,54 +88,40 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: theme.colors.background,
   },
   safeArea: {
     flex: 1,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.xl,
     alignItems: 'center',
   },
+  headerContent: {
+    alignItems: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  headerIcon: {
+    fontSize: 32,
+    marginBottom: theme.spacing.sm,
+  },
   headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 10,
+    ...theme.typography.heading,
+    color: theme.colors.text,
+    textAlign: 'center',
   },
-  progressDots: {
+  progressContainer: {
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'center',
+    gap: theme.spacing.sm,
   },
-  dot: {
-    width: 8,
+  progressDot: {
     height: 8,
-    borderRadius: 4,
+    borderRadius: theme.borderRadius.circle,
+    transition: 'all 0.3s ease',
   },
   screenContainer: {
     flex: 1,
-  },
-  navigationContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  navButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: '#007AFF',
-    borderRadius: 20,
-    minWidth: 100,
-    alignItems: 'center',
-  },
-  navButtonDisabled: {
-    backgroundColor: '#E5E5E7',
-  },
-  navButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });
