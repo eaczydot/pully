@@ -10,11 +10,8 @@ import {
 // import { PanGestureHandler } from 'react-native-gesture-handler';
 // import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import TipCalculatorScreen from './src/screens/TipCalculatorScreen';
-import BartenderEntryScreen from './src/screens/BartenderEntryScreen';
-import SupportStaffScreen from './src/screens/SupportStaffScreen';
+import PersonSelectionScreen from './src/screens/PersonSelectionScreen';
 import ResultsScreen from './src/screens/ResultsScreen';
-
-
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState(0);
@@ -26,18 +23,25 @@ export default function App() {
   });
 
   const screens = [
-    { component: TipCalculatorScreen, title: 'Total Tips' },
-    { component: BartenderEntryScreen, title: 'Bartenders' },
-    { component: SupportStaffScreen, title: 'Support Staff' },
+    { component: TipCalculatorScreen, title: 'Enter Total Tips' },
+    { component: PersonSelectionScreen, title: 'Add People' },
     { component: ResultsScreen, title: 'Results' }
   ];
 
-  const handleSwipe = (direction) => {
-    if (direction === 'left' && currentScreen < screens.length - 1) {
+  const handleNext = () => {
+    if (currentScreen < screens.length - 1) {
       setCurrentScreen(currentScreen + 1);
-    } else if (direction === 'right' && currentScreen > 0) {
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentScreen > 0) {
       setCurrentScreen(currentScreen - 1);
     }
+  };
+
+  const goToScreen = (screenIndex) => {
+    setCurrentScreen(screenIndex);
   };
 
   const CurrentScreenComponent = screens[currentScreen].component;
@@ -45,41 +49,23 @@ export default function App() {
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <StatusBar style="dark" />
+        <StatusBar style="dark" backgroundColor="#FFFFFF" />
         
-        {/* Header */}
+        {/* Minimal Header with Progress */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>{screens[currentScreen].title}</Text>
-          <View style={styles.progressDots}>
-            {screens.map((_, index) => (
-              <View
-                key={index}
+          <View style={styles.progressContainer}>
+            <View style={styles.progressTrack}>
+              <View 
                 style={[
-                  styles.dot,
-                  { backgroundColor: index === currentScreen ? '#000' : '#E5E5E7' }
+                  styles.progressFill,
+                  { width: `${((currentScreen + 1) / screens.length) * 100}%` }
                 ]}
               />
-            ))}
+            </View>
+            <Text style={styles.stepText}>
+              {currentScreen + 1} of {screens.length}
+            </Text>
           </View>
-        </View>
-
-        {/* Navigation Buttons */}
-        <View style={styles.navigationContainer}>
-          <TouchableOpacity 
-            style={[styles.navButton, currentScreen === 0 && styles.navButtonDisabled]}
-            onPress={() => handleSwipe('right')}
-            disabled={currentScreen === 0}
-          >
-            <Text style={styles.navButtonText}>← Previous</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.navButton, currentScreen === screens.length - 1 && styles.navButtonDisabled]}
-            onPress={() => handleSwipe('left')}
-            disabled={currentScreen === screens.length - 1}
-          >
-            <Text style={styles.navButtonText}>Next →</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Main Content */}
@@ -87,8 +73,10 @@ export default function App() {
           <CurrentScreenComponent
             tipData={tipData}
             setTipData={setTipData}
-            onNext={() => handleSwipe('left')}
-            onPrevious={() => handleSwipe('right')}
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            goToScreen={goToScreen}
+            currentScreen={currentScreen}
           />
         </View>
       </SafeAreaView>
@@ -99,54 +87,37 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#FFFFFF',
   },
   safeArea: {
     flex: 1,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  progressContainer: {
     alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 10,
+  progressTrack: {
+    width: '100%',
+    height: 3,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 2,
+    marginBottom: 8,
   },
-  progressDots: {
-    flexDirection: 'row',
-    gap: 8,
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#007AFF',
+    borderRadius: 2,
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  stepText: {
+    fontSize: 13,
+    color: '#8E8E93',
+    fontWeight: '500',
   },
   screenContainer: {
     flex: 1,
-  },
-  navigationContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  navButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: '#007AFF',
-    borderRadius: 20,
-    minWidth: 100,
-    alignItems: 'center',
-  },
-  navButtonDisabled: {
-    backgroundColor: '#E5E5E7',
-  },
-  navButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

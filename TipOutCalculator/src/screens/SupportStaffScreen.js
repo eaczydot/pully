@@ -11,25 +11,37 @@ import {
 import Keypad from '../components/Keypad';
 
 const SupportStaffScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
-  const [currentStaff, setCurrentStaff] = useState(0);
   const [entryMode, setEntryMode] = useState('name'); // 'name' or 'hours'
   const [nameInput, setNameInput] = useState('');
   const [hoursInput, setHoursInput] = useState('0');
 
   const addNewStaff = () => {
+    if (!nameInput.trim()) {
+      Alert.alert('Missing Name', 'Please enter a name for the support staff');
+      return;
+    }
+
+    const hours = parseFloat(hoursInput) || 0;
+    if (hours <= 0) {
+      Alert.alert('Invalid Hours', 'Please enter valid hours worked');
+      return;
+    }
+
     const newStaff = {
       id: Date.now(),
-      name: '',
-      hours: 0
+      name: nameInput.trim(),
+      hours: hours
     };
+
     setTipData(prev => ({
       ...prev,
       supportStaff: [...prev.supportStaff, newStaff]
     }));
-    setCurrentStaff(tipData.supportStaff.length);
-    setEntryMode('name');
+
+    // Reset for next entry
     setNameInput('');
     setHoursInput('0');
+    setEntryMode('name');
   };
 
   const handleNumberPress = (number) => {
@@ -58,45 +70,29 @@ const SupportStaffScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
     }
   };
 
-  const saveStaff = () => {
-    if (!nameInput.trim()) {
-      Alert.alert('Error', 'Please enter a name for the support staff');
-      return;
-    }
-
-    const hours = parseFloat(hoursInput) || 0;
-    if (hours <= 0) {
-      Alert.alert('Error', 'Please enter valid hours worked');
-      return;
-    }
-
-    setTipData(prev => ({
-      ...prev,
-      supportStaff: prev.supportStaff.map((staff, index) => 
-        index === currentStaff 
-          ? { ...staff, name: nameInput.trim(), hours }
-          : staff
-      )
-    }));
-
-    // Reset for next entry
-    setNameInput('');
-    setHoursInput('0');
-    setEntryMode('name');
-  };
-
   const deleteStaff = (index) => {
-    setTipData(prev => ({
-      ...prev,
-      supportStaff: prev.supportStaff.filter((_, i) => i !== index)
-    }));
-    if (currentStaff >= tipData.supportStaff.length - 1) {
-      setCurrentStaff(Math.max(0, tipData.supportStaff.length - 2));
-    }
+    Alert.alert(
+      'Remove Support Staff',
+      'Are you sure you want to remove this support staff member?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Remove', 
+          style: 'destructive',
+          onPress: () => {
+            setTipData(prev => ({
+              ...prev,
+              supportStaff: prev.supportStaff.filter((_, i) => i !== index)
+            }));
+          }
+        }
+      ]
+    );
   };
 
   const totalHours = tipData.supportStaff.reduce((sum, s) => sum + s.hours, 0);
   const supportTipPool = tipData.totalTips * (tipData.supportStaffPercentage / 100);
+  const isValidEntry = nameInput.trim() && parseFloat(hoursInput) > 0;
 
   return (
     <View style={styles.container}>
@@ -105,32 +101,26 @@ const SupportStaffScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
         <TouchableOpacity onPress={onPrevious} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          Support Staff {currentStaff + 1}
-        </Text>
-        <TouchableOpacity onPress={addNewStaff} style={styles.addButton}>
-          <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Add Support Staff</Text>
+          <Text style={styles.headerSubtitle}>
+            Support pool: ${supportTipPool.toFixed(2)} ({tipData.supportStaffPercentage}%)
+          </Text>
+        </View>
+        <View style={styles.placeholder} />
       </View>
 
-      {/* Support Staff Pool Info */}
-      <View style={styles.poolInfo}>
-        <Text style={styles.poolText}>
-          Support Staff Pool: ${supportTipPool.toFixed(2)} ({tipData.supportStaffPercentage}% of total)
-        </Text>
-      </View>
-
-      {/* Current Staff Display */}
-      <View style={styles.displayContainer}>
+      {/* Entry Section */}
+      <View style={styles.entrySection}>
         {entryMode === 'name' ? (
           <View style={styles.nameEntry}>
-            <Text style={styles.labelText}>Support Staff Name</Text>
+            <Text style={styles.inputLabel}>Support Staff Name</Text>
             <TextInput
               style={styles.nameInput}
               value={nameInput}
               onChangeText={setNameInput}
               placeholder="Enter name"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor="#C7C7CC"
               autoFocus
               returnKeyType="next"
               onSubmitEditing={() => {
@@ -141,58 +131,79 @@ const SupportStaffScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
             />
             {nameInput.trim() && (
               <TouchableOpacity 
-                style={styles.continueButton}
+                style={styles.nextButton}
                 onPress={() => setEntryMode('hours')}
               >
-                <Text style={styles.continueButtonText}>Set Hours</Text>
+                <Text style={styles.nextButtonText}>Next: Hours</Text>
               </TouchableOpacity>
             )}
           </View>
         ) : (
           <View style={styles.hoursEntry}>
-            <Text style={styles.labelText}>Hours Worked</Text>
+            <Text style={styles.inputLabel}>Hours Worked</Text>
             <Text style={styles.nameDisplay}>{nameInput}</Text>
             <Text style={styles.hoursDisplay}>{hoursInput} hours</Text>
             <TouchableOpacity 
-              style={styles.saveButton}
-              onPress={saveStaff}
+              style={[styles.addButton, !isValidEntry && styles.addButtonDisabled]}
+              onPress={addNewStaff}
+              disabled={!isValidEntry}
             >
-              <Text style={styles.saveButtonText}>Save Support Staff</Text>
+              <Text style={[styles.addButtonText, !isValidEntry && styles.addButtonTextDisabled]}>
+                Add Support Staff
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.backToNameButton}
+              onPress={() => setEntryMode('name')}
+            >
+              <Text style={styles.backToNameButtonText}>← Back to Name</Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
 
       {/* Support Staff List */}
-      <ScrollView style={styles.listContainer}>
-        {tipData.supportStaff.map((staff, index) => {
-          const percentage = totalHours > 0 ? (staff.hours / totalHours) * 100 : 0;
-          const tipAmount = supportTipPool * (percentage / 100);
-          
-          return (
-            <View key={staff.id} style={styles.staffItem}>
-              <View style={styles.staffInfo}>
-                <Text style={styles.staffName}>{staff.name}</Text>
-                <Text style={styles.staffHours}>{staff.hours} hours</Text>
-                <Text style={styles.staffPercentage}>
-                  {percentage.toFixed(1)}% • ${tipAmount.toFixed(2)}
-                </Text>
-              </View>
-              <TouchableOpacity 
-                onPress={() => deleteStaff(index)}
-                style={styles.deleteButton}
-              >
-                <Text style={styles.deleteButtonText}>×</Text>
-              </TouchableOpacity>
-            </View>
-          );
-        })}
-      </ScrollView>
+      {tipData.supportStaff.length > 0 && (
+        <View style={styles.listSection}>
+          <Text style={styles.listTitle}>Added Support Staff ({tipData.supportStaff.length})</Text>
+          <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
+            {tipData.supportStaff.map((staff, index) => {
+              const percentage = totalHours > 0 ? (staff.hours / totalHours) * 100 : 0;
+              const tipAmount = supportTipPool * (percentage / 100);
+              
+              return (
+                <View key={staff.id} style={styles.staffCard}>
+                  <View style={styles.staffInfo}>
+                    <Text style={styles.staffName}>{staff.name}</Text>
+                    <Text style={styles.staffDetails}>
+                      {staff.hours} hours • {percentage.toFixed(1)}%
+                    </Text>
+                    <Text style={styles.staffAmount}>
+                      ${tipAmount.toFixed(2)}
+                    </Text>
+                  </View>
+                  <TouchableOpacity 
+                    onPress={() => deleteStaff(index)}
+                    style={styles.deleteButton}
+                  >
+                    <Text style={styles.deleteButtonText}>×</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
 
       {/* Continue Button */}
-      <View style={styles.bottomContainer}>
-        <TouchableOpacity style={styles.continueMainButton} onPress={onNext}>
-          <Text style={styles.continueMainButtonText}>Calculate Results</Text>
+      <View style={styles.bottomSection}>
+        <TouchableOpacity 
+          style={styles.continueButton} 
+          onPress={onNext}
+        >
+          <Text style={styles.continueButtonText}>
+            Calculate Results
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -212,173 +223,191 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginVertical: 10,
-    borderRadius: 20,
-    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5E7',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 22,
+    backgroundColor: '#F8F9FA',
   },
   backButtonText: {
-    fontSize: 24,
+    fontSize: 20,
     color: '#007AFF',
+    fontWeight: '600',
+  },
+  headerContent: {
+    flex: 1,
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#000',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000000',
   },
-  addButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addButtonText: {
-    fontSize: 28,
-    color: '#007AFF',
-  },
-  poolInfo: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#F2F2F7',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5E7',
-  },
-  poolText: {
-    fontSize: 15,
+  headerSubtitle: {
+    fontSize: 14,
     color: '#8E8E93',
-    textAlign: 'center',
+    marginTop: 2,
   },
-  displayContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 30,
-    alignItems: 'center',
+  placeholder: {
+    width: 44,
+  },
+  entrySection: {
+    paddingHorizontal: 24,
+    paddingVertical: 32,
   },
   nameEntry: {
-    width: '100%',
     alignItems: 'center',
   },
   hoursEntry: {
-    width: '100%',
     alignItems: 'center',
   },
-  labelText: {
+  inputLabel: {
     fontSize: 16,
     color: '#8E8E93',
-    marginBottom: 15,
+    marginBottom: 16,
+    fontWeight: '500',
   },
   nameInput: {
     fontSize: 24,
-    fontWeight: '300',
-    color: '#000',
+    fontWeight: '400',
+    color: '#000000',
     textAlign: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
-    paddingVertical: 10,
+    borderBottomWidth: 2,
+    borderBottomColor: '#FF9500',
+    paddingVertical: 12,
     minWidth: 200,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   nameDisplay: {
-    fontSize: 20,
-    fontWeight: '500',
-    color: '#000',
-    marginBottom: 10,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
   },
   hoursDisplay: {
-    fontSize: 36,
+    fontSize: 40,
     fontWeight: '300',
-    color: '#000',
-    marginBottom: 20,
+    color: '#000000',
+    marginBottom: 24,
   },
-  continueButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 20,
-    paddingHorizontal: 30,
-    paddingVertical: 12,
+  nextButton: {
+    backgroundColor: '#FF9500',
+    borderRadius: 12,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
   },
-  continueButtonText: {
+  nextButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
-  saveButton: {
+  addButton: {
     backgroundColor: '#34C759',
-    borderRadius: 20,
-    paddingHorizontal: 30,
-    paddingVertical: 12,
+    borderRadius: 12,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    marginBottom: 16,
   },
-  saveButtonText: {
+  addButtonDisabled: {
+    backgroundColor: '#F0F0F0',
+  },
+  addButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  addButtonTextDisabled: {
+    color: '#C7C7CC',
+  },
+  backToNameButton: {
+    paddingVertical: 12,
+  },
+  backToNameButtonText: {
+    color: '#FF9500',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  listSection: {
+    flex: 1,
+    paddingHorizontal: 24,
+  },
+  listTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 16,
   },
   listContainer: {
     flex: 1,
-    paddingHorizontal: 20,
   },
-  staffItem: {
+  staffCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5E7',
+    backgroundColor: '#FFF8F0',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF9500',
   },
   staffInfo: {
     flex: 1,
   },
   staffName: {
-    fontSize: 17,
-    fontWeight: '500',
-    color: '#000',
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 4,
   },
-  staffHours: {
-    fontSize: 15,
+  staffDetails: {
+    fontSize: 14,
     color: '#8E8E93',
-    marginTop: 2,
+    marginBottom: 4,
   },
-  staffPercentage: {
-    fontSize: 13,
+  staffAmount: {
+    fontSize: 16,
+    fontWeight: '700',
     color: '#FF9500',
-    marginTop: 2,
   },
   deleteButton: {
-    width: 30,
-    height: 30,
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 16,
+    backgroundColor: '#FF6B6B',
   },
   deleteButtonText: {
-    fontSize: 24,
-    color: '#FF3B30',
+    fontSize: 18,
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
-  bottomContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+  bottomSection: {
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
   },
-  continueMainButton: {
-    backgroundColor: '#000',
-    borderRadius: 25,
-    paddingVertical: 15,
+  continueButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 16,
+    paddingVertical: 18,
     alignItems: 'center',
   },
-  continueMainButtonText: {
+  continueButtonText: {
     color: '#FFFFFF',
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
   },
 });

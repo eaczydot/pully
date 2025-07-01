@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
 
@@ -12,6 +13,13 @@ const Keypad = ({ onNumberPress, onDecimalPress, onDeletePress, showDecimal = tr
   ];
 
   const handlePress = (value) => {
+    // Add haptic feedback for better mobile UX
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (error) {
+      // Haptics not available, continue without feedback
+    }
+    
     if (value === '⌫') {
       onDeletePress();
     } else if (value === '.') {
@@ -30,11 +38,12 @@ const Keypad = ({ onNumberPress, onDecimalPress, onDeletePress, showDecimal = tr
               key={buttonIndex}
               style={[
                 styles.button,
-                button === '' && styles.invisibleButton
+                button === '' && styles.invisibleButton,
+                button === '⌫' && styles.deleteButton
               ]}
               onPress={() => handlePress(button)}
               disabled={button === ''}
-              activeOpacity={0.2}
+              activeOpacity={0.1}
             >
               <Text style={[
                 styles.buttonText,
@@ -52,32 +61,39 @@ const Keypad = ({ onNumberPress, onDecimalPress, onDeletePress, showDecimal = tr
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingHorizontal: 12,
+    paddingBottom: 32,
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 15,
+    marginBottom: 12,
   },
   button: {
-    width: (width - 80) / 3,
-    height: 60,
+    width: (width - 72) / 3,
+    height: 64,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 16,
+    marginHorizontal: 6,
   },
   invisibleButton: {
     opacity: 0,
+    backgroundColor: 'transparent',
+  },
+  deleteButton: {
+    backgroundColor: '#FF6B6B',
   },
   buttonText: {
-    fontSize: 32,
-    fontWeight: '300',
-    color: '#000',
+    fontSize: 28,
+    fontWeight: '400',
+    color: '#000000',
   },
   deleteButtonText: {
-    fontSize: 24,
-    fontWeight: '400',
+    fontSize: 22,
+    fontWeight: '500',
+    color: '#FFFFFF',
   },
 });
 

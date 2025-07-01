@@ -27,13 +27,15 @@ const TipCalculatorScreen = ({ tipData, setTipData, onNext }) => {
     }
   };
 
-  const handleSave = () => {
+  const handleContinue = () => {
     const amount = parseFloat(displayValue) || 0;
-    setTipData(prev => ({
-      ...prev,
-      totalTips: amount
-    }));
-    onNext();
+    if (amount > 0) {
+      setTipData(prev => ({
+        ...prev,
+        totalTips: amount
+      }));
+      onNext();
+    }
   };
 
   const formatCurrency = (value) => {
@@ -44,41 +46,33 @@ const TipCalculatorScreen = ({ tipData, setTipData, onNext }) => {
     })}`;
   };
 
+  const isValidAmount = parseFloat(displayValue) > 0;
+
   return (
     <View style={styles.container}>
+      {/* Screen Title */}
+      <View style={styles.titleContainer}>
+        <Text style={styles.title}>Enter Total Tips</Text>
+        <Text style={styles.subtitle}>How much in tips needs to be distributed?</Text>
+      </View>
+
       {/* Amount Display */}
       <View style={styles.displayContainer}>
-        <Text style={styles.availableText}>Total Tips</Text>
         <Text style={styles.amountText}>
           {formatCurrency(displayValue)}
         </Text>
       </View>
 
-      {/* Action Buttons */}
-      <View style={styles.actionsContainer}>
-        <TouchableOpacity style={styles.actionButton}>
-          <Text style={styles.actionIcon}>📝</Text>
-          <Text style={styles.actionText}>Note</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Category Section */}
-      <View style={styles.categoryContainer}>
-        <View style={styles.categoryItem}>
-          <View style={styles.categoryIcon}>
-            <Text style={styles.categoryEmoji}>🍸</Text>
-          </View>
-          <Text style={styles.categoryText}>Bartender Tips</Text>
-        </View>
-      </View>
-
-      {/* Save Button */}
-      <View style={styles.saveContainer}>
+      {/* Continue Button */}
+      <View style={styles.buttonContainer}>
         <TouchableOpacity 
-          style={styles.saveButton}
-          onPress={handleSave}
+          style={[styles.continueButton, !isValidAmount && styles.continueButtonDisabled]}
+          onPress={handleContinue}
+          disabled={!isValidAmount}
         >
-          <Text style={styles.saveButtonText}>Continue</Text>
+          <Text style={[styles.continueButtonText, !isValidAmount && styles.continueButtonTextDisabled]}>
+            Continue
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -96,10 +90,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginVertical: 10,
-    borderRadius: 20,
-    overflow: 'hidden',
+    paddingHorizontal: 24,
+  },
+  titleContainer: {
+    paddingTop: 32,
+    paddingBottom: 24,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#8E8E93',
+    textAlign: 'center',
+    lineHeight: 22,
   },
   displayContainer: {
     flex: 1,
@@ -107,76 +116,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 40,
   },
-  availableText: {
-    fontSize: 16,
-    color: '#8E8E93',
-    marginBottom: 8,
-  },
   amountText: {
-    fontSize: 48,
-    fontWeight: '300',
-    color: '#000',
+    fontSize: 56,
+    fontWeight: '200',
+    color: '#000000',
+    textAlign: 'center',
   },
-  actionsContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+  buttonContainer: {
+    paddingBottom: 24,
   },
-  actionButton: {
-    flexDirection: 'row',
+  continueButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 16,
+    paddingVertical: 18,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
+    shadowColor: '#007AFF',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  actionIcon: {
-    fontSize: 16,
-    marginRight: 8,
+  continueButtonDisabled: {
+    backgroundColor: '#F0F0F0',
+    shadowOpacity: 0,
+    elevation: 0,
   },
-  actionText: {
-    fontSize: 16,
-    color: '#8E8E93',
-  },
-  categoryContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  categoryItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 15,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E5E7',
-  },
-  categoryIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: '#F2F2F7',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  categoryEmoji: {
-    fontSize: 20,
-  },
-  categoryText: {
-    fontSize: 17,
-    color: '#000',
-    flex: 1,
-  },
-  saveContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  saveButton: {
-    backgroundColor: '#000',
-    borderRadius: 25,
-    paddingVertical: 15,
-    alignItems: 'center',
-  },
-  saveButtonText: {
+  continueButtonText: {
     color: '#FFFFFF',
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
+  },
+  continueButtonTextDisabled: {
+    color: '#C7C7CC',
   },
 });
 

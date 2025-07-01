@@ -11,25 +11,37 @@ import {
 import Keypad from '../components/Keypad';
 
 const BartenderEntryScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
-  const [currentBartender, setCurrentBartender] = useState(0);
   const [entryMode, setEntryMode] = useState('name'); // 'name' or 'hours'
   const [nameInput, setNameInput] = useState('');
   const [hoursInput, setHoursInput] = useState('0');
 
   const addNewBartender = () => {
+    if (!nameInput.trim()) {
+      Alert.alert('Missing Name', 'Please enter a name for the bartender');
+      return;
+    }
+
+    const hours = parseFloat(hoursInput) || 0;
+    if (hours <= 0) {
+      Alert.alert('Invalid Hours', 'Please enter valid hours worked');
+      return;
+    }
+
     const newBartender = {
       id: Date.now(),
-      name: '',
-      hours: 0
+      name: nameInput.trim(),
+      hours: hours
     };
+
     setTipData(prev => ({
       ...prev,
       bartenders: [...prev.bartenders, newBartender]
     }));
-    setCurrentBartender(tipData.bartenders.length);
-    setEntryMode('name');
+
+    // Reset for next entry
     setNameInput('');
     setHoursInput('0');
+    setEntryMode('name');
   };
 
   const handleNumberPress = (number) => {
@@ -58,45 +70,30 @@ const BartenderEntryScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
     }
   };
 
-  const saveBartender = () => {
-    if (!nameInput.trim()) {
-      Alert.alert('Error', 'Please enter a name for the bartender');
-      return;
-    }
-
-    const hours = parseFloat(hoursInput) || 0;
-    if (hours <= 0) {
-      Alert.alert('Error', 'Please enter valid hours worked');
-      return;
-    }
-
-    setTipData(prev => ({
-      ...prev,
-      bartenders: prev.bartenders.map((bartender, index) => 
-        index === currentBartender 
-          ? { ...bartender, name: nameInput.trim(), hours }
-          : bartender
-      )
-    }));
-
-    // Reset for next entry
-    setNameInput('');
-    setHoursInput('0');
-    setEntryMode('name');
-  };
-
   const deleteBartender = (index) => {
-    setTipData(prev => ({
-      ...prev,
-      bartenders: prev.bartenders.filter((_, i) => i !== index)
-    }));
-    if (currentBartender >= tipData.bartenders.length - 1) {
-      setCurrentBartender(Math.max(0, tipData.bartenders.length - 2));
-    }
+    Alert.alert(
+      'Remove Bartender',
+      'Are you sure you want to remove this bartender?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Remove', 
+          style: 'destructive',
+          onPress: () => {
+            setTipData(prev => ({
+              ...prev,
+              bartenders: prev.bartenders.filter((_, i) => i !== index)
+            }));
+          }
+        }
+      ]
+    );
   };
 
-  const currentBartenderData = tipData.bartenders[currentBartender];
   const totalHours = tipData.bartenders.reduce((sum, b) => sum + b.hours, 0);
+  const bartenderPool = tipData.totalTips * 0.8; // 80% for bartenders
+  const canContinue = tipData.bartenders.length > 0;
+  const isValidEntry = nameInput.trim() && parseFloat(hoursInput) > 0;
 
   return (
     <View style={styles.container}>
@@ -105,25 +102,26 @@ const BartenderEntryScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
         <TouchableOpacity onPress={onPrevious} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          Bartender {currentBartender + 1}
-        </Text>
-        <TouchableOpacity onPress={addNewBartender} style={styles.addButton}>
-          <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Add Bartenders</Text>
+          <Text style={styles.headerSubtitle}>
+            Bartender pool: ${bartenderPool.toFixed(2)} (80%)
+          </Text>
+        </View>
+        <View style={styles.placeholder} />
       </View>
 
-      {/* Current Bartender Display */}
-      <View style={styles.displayContainer}>
+      {/* Entry Section */}
+      <View style={styles.entrySection}>
         {entryMode === 'name' ? (
           <View style={styles.nameEntry}>
-            <Text style={styles.labelText}>Bartender Name</Text>
+            <Text style={styles.inputLabel}>Bartender Name</Text>
             <TextInput
               style={styles.nameInput}
               value={nameInput}
               onChangeText={setNameInput}
               placeholder="Enter name"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor="#C7C7CC"
               autoFocus
               returnKeyType="next"
               onSubmitEditing={() => {
@@ -134,56 +132,80 @@ const BartenderEntryScreen = ({ tipData, setTipData, onNext, onPrevious }) => {
             />
             {nameInput.trim() && (
               <TouchableOpacity 
-                style={styles.continueButton}
+                style={styles.nextButton}
                 onPress={() => setEntryMode('hours')}
               >
-                <Text style={styles.continueButtonText}>Set Hours</Text>
+                <Text style={styles.nextButtonText}>Next: Hours</Text>
               </TouchableOpacity>
             )}
           </View>
         ) : (
           <View style={styles.hoursEntry}>
-            <Text style={styles.labelText}>Hours Worked</Text>
+            <Text style={styles.inputLabel}>Hours Worked</Text>
             <Text style={styles.nameDisplay}>{nameInput}</Text>
             <Text style={styles.hoursDisplay}>{hoursInput} hours</Text>
             <TouchableOpacity 
-              style={styles.saveButton}
-              onPress={saveBartender}
+              style={[styles.addButton, !isValidEntry && styles.addButtonDisabled]}
+              onPress={addNewBartender}
+              disabled={!isValidEntry}
             >
-              <Text style={styles.saveButtonText}>Save Bartender</Text>
+              <Text style={[styles.addButtonText, !isValidEntry && styles.addButtonTextDisabled]}>
+                Add Bartender
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.backToNameButton}
+              onPress={() => setEntryMode('name')}
+            >
+              <Text style={styles.backToNameButtonText}>← Back to Name</Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
 
       {/* Bartender List */}
-      <ScrollView style={styles.listContainer}>
-        {tipData.bartenders.map((bartender, index) => (
-          <View key={bartender.id} style={styles.bartenderItem}>
-            <View style={styles.bartenderInfo}>
-              <Text style={styles.bartenderName}>{bartender.name}</Text>
-              <Text style={styles.bartenderHours}>{bartender.hours} hours</Text>
-              {totalHours > 0 && (
-                <Text style={styles.bartenderPercentage}>
-                  {((bartender.hours / totalHours) * 100).toFixed(1)}%
-                </Text>
-              )}
-            </View>
-            <TouchableOpacity 
-              onPress={() => deleteBartender(index)}
-              style={styles.deleteButton}
-            >
-              <Text style={styles.deleteButtonText}>×</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
-      </ScrollView>
+      {tipData.bartenders.length > 0 && (
+        <View style={styles.listSection}>
+          <Text style={styles.listTitle}>Added Bartenders ({tipData.bartenders.length})</Text>
+          <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
+            {tipData.bartenders.map((bartender, index) => {
+              const percentage = totalHours > 0 ? (bartender.hours / totalHours) * 100 : 0;
+              const tipAmount = bartenderPool * (percentage / 100);
+              
+              return (
+                <View key={bartender.id} style={styles.bartenderCard}>
+                  <View style={styles.bartenderInfo}>
+                    <Text style={styles.bartenderName}>{bartender.name}</Text>
+                    <Text style={styles.bartenderDetails}>
+                      {bartender.hours} hours • {percentage.toFixed(1)}%
+                    </Text>
+                    <Text style={styles.bartenderAmount}>
+                      ${tipAmount.toFixed(2)}
+                    </Text>
+                  </View>
+                  <TouchableOpacity 
+                    onPress={() => deleteBartender(index)}
+                    style={styles.deleteButton}
+                  >
+                    <Text style={styles.deleteButtonText}>×</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
 
       {/* Continue Button */}
-      {tipData.bartenders.length > 0 && tipData.bartenders.every(b => b.name && b.hours > 0) && (
-        <View style={styles.bottomContainer}>
-          <TouchableOpacity style={styles.continueMainButton} onPress={onNext}>
-            <Text style={styles.continueMainButtonText}>Continue to Support Staff</Text>
+      {canContinue && (
+        <View style={styles.bottomSection}>
+          <TouchableOpacity 
+            style={styles.continueButton} 
+            onPress={onNext}
+          >
+            <Text style={styles.continueButtonText}>
+              Continue to Support Staff
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -204,161 +226,189 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginVertical: 10,
-    borderRadius: 20,
-    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5E7',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 22,
+    backgroundColor: '#F8F9FA',
   },
   backButtonText: {
-    fontSize: 24,
+    fontSize: 20,
     color: '#007AFF',
+    fontWeight: '600',
+  },
+  headerContent: {
+    flex: 1,
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#000',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000000',
   },
-  addButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#8E8E93',
+    marginTop: 2,
   },
-  addButtonText: {
-    fontSize: 28,
-    color: '#007AFF',
+  placeholder: {
+    width: 44,
   },
-  displayContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 30,
-    alignItems: 'center',
+  entrySection: {
+    paddingHorizontal: 24,
+    paddingVertical: 32,
   },
   nameEntry: {
-    width: '100%',
     alignItems: 'center',
   },
   hoursEntry: {
-    width: '100%',
     alignItems: 'center',
   },
-  labelText: {
+  inputLabel: {
     fontSize: 16,
     color: '#8E8E93',
-    marginBottom: 15,
+    marginBottom: 16,
+    fontWeight: '500',
   },
   nameInput: {
     fontSize: 24,
-    fontWeight: '300',
-    color: '#000',
+    fontWeight: '400',
+    color: '#000000',
     textAlign: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
-    paddingVertical: 10,
+    borderBottomWidth: 2,
+    borderBottomColor: '#007AFF',
+    paddingVertical: 12,
     minWidth: 200,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   nameDisplay: {
-    fontSize: 20,
-    fontWeight: '500',
-    color: '#000',
-    marginBottom: 10,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
   },
   hoursDisplay: {
-    fontSize: 36,
+    fontSize: 40,
     fontWeight: '300',
-    color: '#000',
-    marginBottom: 20,
+    color: '#000000',
+    marginBottom: 24,
   },
-  continueButton: {
+  nextButton: {
     backgroundColor: '#007AFF',
-    borderRadius: 20,
-    paddingHorizontal: 30,
-    paddingVertical: 12,
+    borderRadius: 12,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
   },
-  continueButtonText: {
+  nextButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
-  saveButton: {
+  addButton: {
     backgroundColor: '#34C759',
-    borderRadius: 20,
-    paddingHorizontal: 30,
-    paddingVertical: 12,
+    borderRadius: 12,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    marginBottom: 16,
   },
-  saveButtonText: {
+  addButtonDisabled: {
+    backgroundColor: '#F0F0F0',
+  },
+  addButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  addButtonTextDisabled: {
+    color: '#C7C7CC',
+  },
+  backToNameButton: {
+    paddingVertical: 12,
+  },
+  backToNameButtonText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  listSection: {
+    flex: 1,
+    paddingHorizontal: 24,
+  },
+  listTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 16,
   },
   listContainer: {
     flex: 1,
-    paddingHorizontal: 20,
   },
-  bartenderItem: {
+  bartenderCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5E7',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
   },
   bartenderInfo: {
     flex: 1,
   },
   bartenderName: {
-    fontSize: 17,
-    fontWeight: '500',
-    color: '#000',
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 4,
   },
-  bartenderHours: {
-    fontSize: 15,
+  bartenderDetails: {
+    fontSize: 14,
     color: '#8E8E93',
-    marginTop: 2,
+    marginBottom: 4,
   },
-  bartenderPercentage: {
-    fontSize: 13,
-    color: '#007AFF',
-    marginTop: 2,
+  bartenderAmount: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#34C759',
   },
   deleteButton: {
-    width: 30,
-    height: 30,
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 16,
+    backgroundColor: '#FF6B6B',
   },
   deleteButtonText: {
-    fontSize: 24,
-    color: '#FF3B30',
+    fontSize: 18,
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
-  bottomContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+  bottomSection: {
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
   },
-  continueMainButton: {
-    backgroundColor: '#000',
-    borderRadius: 25,
-    paddingVertical: 15,
+  continueButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 16,
+    paddingVertical: 18,
     alignItems: 'center',
   },
-  continueMainButtonText: {
+  continueButtonText: {
     color: '#FFFFFF',
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
   },
 });
