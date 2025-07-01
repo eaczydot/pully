@@ -10,7 +10,12 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
-import { theme, createButtonStyle, createCardStyle, createCircularButtonStyle } from '../theme';
+import { theme, createCardStyle, createCircularButtonStyle } from '../theme';
+import CircularActionCard from '../components/CircularActionCard';
+import MinimalValueCard from '../components/MinimalValueCard';
+import AnimatedCard from '../components/AnimatedCard';
+import FloatingActionButton from '../components/FloatingActionButton';
+import AnimatedNumber from '../components/AnimatedNumber';
 
 const ResultsScreen = ({ tipData, setTipData, onPrevious }) => {
   const calculateResults = () => {
@@ -50,195 +55,282 @@ const ResultsScreen = ({ tipData, setTipData, onPrevious }) => {
   const shareResults = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    let shareText = `🍸 Tip Out Calculator Results\n\n`;
-    shareText += `Total Tips: $${results.totalTips.toFixed(2)}\n`;
-    shareText += `Bartender Pool (${100 - tipData.supportStaffPercentage}%): $${results.bartenderPool.toFixed(2)}\n`;
-    shareText += `Support Staff Pool (${tipData.supportStaffPercentage}%): $${results.supportPool.toFixed(2)}\n\n`;
+    let shareText = `💰 Tonight's Tips\n\n`;
+    shareText += `Total: $${results.totalTips.toFixed(2)}\n\n`;
     
-    shareText += `👩‍🍳 BARTENDERS:\n`;
+    shareText += `🍸 BARTENDERS (${100 - tipData.supportStaffPercentage}%)\n`;
+    shareText += `Pool: $${results.bartenderPool.toFixed(2)}\n`;
     results.bartenderResults.forEach(bartender => {
-      shareText += `${bartender.name}: $${bartender.tipAmount.toFixed(2)} (${bartender.percentage.toFixed(1)}%)\n`;
+      shareText += `${bartender.name}: $${bartender.tipAmount.toFixed(2)}\n`;
     });
     
     if (results.supportResults.length > 0) {
-      shareText += `\n🛠 SUPPORT STAFF:\n`;
+      shareText += `\n🛠 SUPPORT (${tipData.supportStaffPercentage}%)\n`;
+      shareText += `Pool: $${results.supportPool.toFixed(2)}\n`;
       results.supportResults.forEach(staff => {
-        shareText += `${staff.name}: $${staff.tipAmount.toFixed(2)} (${staff.percentage.toFixed(1)}%)\n`;
+        shareText += `${staff.name}: $${staff.tipAmount.toFixed(2)}\n`;
       });
     }
 
     try {
       await Share.share({
         message: shareText,
-        title: 'Tip Out Results'
+        title: 'Tonight\'s Tips'
       });
+      
+      // Success haptic feedback
+      setTimeout(() => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }, 100);
     } catch (error) {
       console.error('Error sharing:', error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   };
 
   const resetCalculator = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setTipData({
       totalTips: 0,
       bartenders: [],
       supportStaff: [],
       supportStaffPercentage: 20
     });
+    
+    // Success feedback after reset
+    setTimeout(() => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }, 200);
   };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onPrevious} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Tonight's Results</Text>
-        <TouchableOpacity onPress={shareResults} style={styles.shareButton}>
-          <Ionicons name="share-outline" size={24} color={theme.colors.teal} />
-        </TouchableOpacity>
-      </View>
+      {/* Minimal Header */}
+      <AnimatedCard
+        animationType="fadeIn"
+        delay={0}
+        style={styles.headerCard}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onPrevious} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={20} color={theme.colors.text} />
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerEmoji}>🎉</Text>
+            <Text style={styles.headerSubtitle}>Tonight's Results</Text>
+          </View>
+          <View style={styles.placeholder} />
+        </View>
+      </AnimatedCard>
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {/* Main Total Display */}
-        <View style={styles.mainDisplay}>
-          <Text style={styles.totalLabel}>Total Tips Distributed</Text>
-          <Text style={styles.totalAmount}>${results.totalTips.toFixed(2)}</Text>
-          
-          {/* Pool Summary Cards */}
-          <View style={styles.poolSummary}>
-            <View style={styles.poolCard}>
-              <LinearGradient
-                colors={[theme.colors.teal, '#00B794']}
-                style={styles.poolGradient}
-              >
-                <Text style={styles.poolLabel}>Bartender Pool</Text>
-                <Text style={styles.poolAmount}>${results.bartenderPool.toFixed(2)}</Text>
-                <Text style={styles.poolPercentage}>{100 - tipData.supportStaffPercentage}%</Text>
-              </LinearGradient>
-            </View>
-            
-            <View style={styles.poolCard}>
-              <LinearGradient
-                colors={[theme.colors.purple, '#574BCE']}
-                style={styles.poolGradient}
-              >
-                <Text style={styles.poolLabel}>Support Pool</Text>
-                <Text style={styles.poolAmount}>${results.supportPool.toFixed(2)}</Text>
-                <Text style={styles.poolPercentage}>{tipData.supportStaffPercentage}%</Text>
-              </LinearGradient>
-            </View>
+        {/* Hero Section - Large Centered Total with Animation */}
+        <AnimatedCard
+          animationType="scale"
+          delay={200}
+          style={styles.heroCard}
+        >
+          <View style={styles.heroSection}>
+            <Text style={styles.totalLabel}>Total Distributed</Text>
+            <AnimatedNumber
+              value={results.totalTips}
+              style={styles.totalAmount}
+              duration={1200}
+              delay={400}
+              onAnimationComplete={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+            />
+            <Text style={styles.totalSubtitle}>
+              {results.bartenderResults.length + results.supportResults.length} people
+            </Text>
           </View>
+        </AnimatedCard>
+
+        {/* Primary Action Cards with Staggered Animation */}
+        <View style={styles.primaryActionsContainer}>
+          <CircularActionCard
+            icon="share-outline"
+            label="Share"
+            color={theme.colors.teal}
+            onPress={shareResults}
+            delay={600}
+            animationType="bounce"
+          />
+          <CircularActionCard
+            icon="save-outline"
+            label="Save"
+            color={theme.colors.purple}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }}
+            delay={700}
+            animationType="bounce"
+          />
+          <CircularActionCard
+            icon="print-outline"
+            label="Print"
+            color={theme.colors.coral}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            }}
+            delay={800}
+            animationType="bounce"
+          />
+          <CircularActionCard
+            icon="refresh-outline"
+            label="New"
+            color={theme.colors.mint}
+            onPress={resetCalculator}
+            delay={900}
+            animationType="bounce"
+          />
         </View>
 
-        {/* Action Cards Row */}
-        <View style={styles.actionCardsContainer}>
-          <TouchableOpacity style={styles.actionCard} onPress={shareResults}>
-            <View style={styles.actionIconContainer}>
-              <Ionicons name="share-outline" size={24} color={theme.colors.teal} />
-            </View>
-            <Text style={styles.actionCardText}>Share</Text>
-          </TouchableOpacity>
+        {/* Pool Distribution Cards with Animation */}
+        <View style={styles.poolDistribution}>
+          <AnimatedCard
+            animationType="slideUp"
+            delay={1000}
+            style={styles.poolCard}
+          >
+            <MinimalValueCard
+              value={`$${results.bartenderPool.toFixed(2)}`}
+              label="Bartender Pool"
+              subtitle={`${100 - tipData.supportStaffPercentage}% • ${results.bartenderResults.length} people`}
+              variant="teal"
+            />
+          </AnimatedCard>
           
-          <TouchableOpacity style={styles.actionCard}>
-            <View style={styles.actionIconContainer}>
-              <Ionicons name="save-outline" size={24} color={theme.colors.purple} />
-            </View>
-            <Text style={styles.actionCardText}>Save</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.actionCard}>
-            <View style={styles.actionIconContainer}>
-              <Ionicons name="print-outline" size={24} color={theme.colors.coral} />
-            </View>
-            <Text style={styles.actionCardText}>Print</Text>
-          </TouchableOpacity>
+          <AnimatedCard
+            animationType="slideUp"
+            delay={1100}
+            style={styles.poolCard}
+          >
+            <MinimalValueCard
+              value={`$${results.supportPool.toFixed(2)}`}
+              label="Support Pool"
+              subtitle={`${tipData.supportStaffPercentage}% • ${results.supportResults.length} people`}
+              variant="purple"
+            />
+          </AnimatedCard>
         </View>
 
-        {/* Bartenders Section */}
-        <View style={styles.sectionContainer}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleContainer}>
-              <Text style={styles.sectionEmoji}>🍸</Text>
-              <Text style={styles.sectionTitle}>Bartenders</Text>
-            </View>
-            <Text style={styles.sectionCount}>{results.bartenderResults.length}</Text>
-          </View>
-          
-          {results.bartenderResults.map((bartender, index) => (
-            <View key={bartender.id} style={styles.personCard}>
-              <View style={styles.personInfo}>
-                <Text style={styles.personName}>{bartender.name}</Text>
-                <Text style={styles.personHours}>{bartender.hours} hours • {bartender.percentage.toFixed(1)}%</Text>
+        {/* Individual Breakdowns with Staggered Animation */}
+        {results.bartenderResults.length > 0 && (
+          <View style={styles.breakdownSection}>
+            <AnimatedCard
+              animationType="fadeIn"
+              delay={1200}
+              style={styles.sectionHeaderCard}
+            >
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>🍸 Bartenders</Text>
+                <View style={styles.countBadge}>
+                  <Text style={styles.countText}>{results.bartenderResults.length}</Text>
+                </View>
               </View>
-              <View style={styles.personPayout}>
-                <Text style={styles.personAmount}>${bartender.tipAmount.toFixed(2)}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-
-        {/* Support Staff Section */}
-        {results.supportResults.length > 0 && (
-          <View style={styles.sectionContainer}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleContainer}>
-                <Text style={styles.sectionEmoji}>🛠</Text>
-                <Text style={styles.sectionTitle}>Support Staff</Text>
-              </View>
-              <Text style={styles.sectionCount}>{results.supportResults.length}</Text>
-            </View>
+            </AnimatedCard>
             
-            {results.supportResults.map((staff, index) => (
-              <View key={staff.id} style={styles.personCard}>
-                <View style={styles.personInfo}>
-                  <Text style={styles.personName}>{staff.name}</Text>
-                  <Text style={styles.personHours}>{staff.hours} hours • {staff.percentage.toFixed(1)}%</Text>
+            {results.bartenderResults.map((bartender, index) => (
+              <AnimatedCard
+                key={bartender.id}
+                animationType="slideUp"
+                delay={1300 + (index * 100)}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+              >
+                <View style={styles.personRow}>
+                  <View style={styles.personInfo}>
+                    <Text style={styles.personName}>{bartender.name}</Text>
+                    <Text style={styles.personDetails}>
+                      {bartender.hours}h • {bartender.percentage.toFixed(1)}%
+                    </Text>
+                  </View>
+                  <AnimatedNumber
+                    value={bartender.tipAmount}
+                    style={styles.personAmount}
+                    duration={800}
+                    delay={1400 + (index * 100)}
+                  />
                 </View>
-                <View style={styles.personPayout}>
-                  <Text style={styles.personAmount}>${staff.tipAmount.toFixed(2)}</Text>
-                </View>
-              </View>
+              </AnimatedCard>
             ))}
           </View>
         )}
 
-        {/* Verification Card */}
-        <View style={styles.verificationCard}>
-          <Text style={styles.verificationTitle}>Verification</Text>
-          <View style={styles.verificationRow}>
-            <Text style={styles.verificationLabel}>Total Distributed:</Text>
-            <Text style={styles.verificationAmount}>
-              ${(
-                results.bartenderResults.reduce((sum, b) => sum + b.tipAmount, 0) +
-                results.supportResults.reduce((sum, s) => sum + s.tipAmount, 0)
-              ).toFixed(2)}
+        {results.supportResults.length > 0 && (
+          <View style={styles.breakdownSection}>
+            <AnimatedCard
+              animationType="fadeIn"
+              delay={1300 + (results.bartenderResults.length * 100)}
+              style={styles.sectionHeaderCard}
+            >
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>🛠 Support Staff</Text>
+                <View style={styles.countBadge}>
+                  <Text style={styles.countText}>{results.supportResults.length}</Text>
+                </View>
+              </View>
+            </AnimatedCard>
+            
+            {results.supportResults.map((staff, index) => (
+              <AnimatedCard
+                key={staff.id}
+                animationType="slideUp"
+                delay={1400 + (results.bartenderResults.length * 100) + (index * 100)}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+              >
+                <View style={styles.personRow}>
+                  <View style={styles.personInfo}>
+                    <Text style={styles.personName}>{staff.name}</Text>
+                    <Text style={styles.personDetails}>
+                      {staff.hours}h • {staff.percentage.toFixed(1)}%
+                    </Text>
+                  </View>
+                  <AnimatedNumber
+                    value={staff.tipAmount}
+                    style={styles.personAmount}
+                    duration={800}
+                    delay={1500 + (results.bartenderResults.length * 100) + (index * 100)}
+                  />
+                </View>
+              </AnimatedCard>
+            ))}
+          </View>
+        )}
+
+        {/* Verification Summary with Animation */}
+        <AnimatedCard
+          animationType="fadeIn"
+          delay={1600 + ((results.bartenderResults.length + results.supportResults.length) * 100)}
+          style={styles.verificationSection}
+        >
+          <View style={styles.verificationCard}>
+            <Text style={styles.verificationTitle}>✓ Verified</Text>
+            <Text style={styles.verificationSubtitle}>
+              All amounts distributed correctly
             </Text>
           </View>
-          <View style={styles.verificationRow}>
-            <Text style={styles.verificationLabel}>Original Total:</Text>
-            <Text style={styles.verificationAmount}>${results.totalTips.toFixed(2)}</Text>
-          </View>
-        </View>
+        </AnimatedCard>
+
+        {/* Bottom Spacing */}
+        <View style={styles.bottomSpacing} />
       </ScrollView>
 
-      {/* Bottom Action Buttons */}
-      <View style={styles.bottomActions}>
-        <TouchableOpacity style={styles.resetButton} onPress={resetCalculator}>
-          <Text style={styles.resetButtonText}>New Calculation</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.shareMainButton} onPress={shareResults}>
-          <LinearGradient
-            colors={[theme.colors.teal, '#00B794']}
-            style={styles.shareButtonGradient}
-          >
-            <Ionicons name="share-outline" size={20} color={theme.colors.text} />
-            <Text style={styles.shareMainButtonText}>Share Results</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
+      {/* Enhanced Floating Action Button */}
+      <FloatingActionButton
+        onPress={shareResults}
+        visible={true}
+        delay={2000}
+        style={styles.floatingAction}
+      >
+        <Ionicons name="share-outline" size={24} color={theme.colors.text} />
+      </FloatingActionButton>
     </View>
   );
 };
@@ -248,134 +340,119 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
+  headerCard: {
+    backgroundColor: 'transparent',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
   },
   backButton: {
-    ...createCircularButtonStyle(40),
+    ...createCircularButtonStyle(36, 'none'),
     backgroundColor: theme.colors.surfaceSecondary,
   },
-  headerTitle: {
-    ...theme.typography.heading,
-    color: theme.colors.text,
+  headerContent: {
+    alignItems: 'center',
   },
-  shareButton: {
-    ...createCircularButtonStyle(40),
-    backgroundColor: theme.colors.surfaceSecondary,
+  headerEmoji: {
+    fontSize: 32,
+    marginBottom: theme.spacing.xs,
+  },
+  headerSubtitle: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    fontWeight: '500',
+  },
+  placeholder: {
+    width: 36,
   },
   scrollContainer: {
     flex: 1,
   },
-  mainDisplay: {
+  heroCard: {
+    backgroundColor: 'transparent',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  heroSection: {
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.xxxl,
+    paddingVertical: theme.spacing.xxxxl,
+    paddingHorizontal: theme.spacing.xl,
   },
   totalLabel: {
     ...theme.typography.caption,
     color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   totalAmount: {
-    ...theme.typography.display,
+    ...theme.typography.hero,
     color: theme.colors.text,
-    marginBottom: theme.spacing.xl,
+    marginBottom: theme.spacing.xs,
   },
-  poolSummary: {
+  totalSubtitle: {
+    ...theme.typography.footnote,
+    color: theme.colors.textTertiary,
+  },
+  primaryActionsContainer: {
     flexDirection: 'row',
-    gap: theme.spacing.md,
-    width: '100%',
+    justifyContent: 'space-around',
+    paddingHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing.xxxl,
+  },
+  poolDistribution: {
+    paddingHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.xxxl,
+    gap: theme.spacing.lg,
   },
   poolCard: {
-    flex: 1,
-    borderRadius: theme.borderRadius.xl,
-    overflow: 'hidden',
-    ...theme.shadows.md,
+    marginBottom: 0,
   },
-  poolGradient: {
-    padding: theme.spacing.lg,
-    alignItems: 'center',
-  },
-  poolLabel: {
-    ...theme.typography.footnote,
-    color: theme.colors.text,
-    opacity: 0.8,
-    marginBottom: theme.spacing.xs,
-  },
-  poolAmount: {
-    ...theme.typography.heading,
-    color: theme.colors.text,
-    fontWeight: '600',
-    marginBottom: theme.spacing.xs,
-  },
-  poolPercentage: {
-    ...theme.typography.footnote,
-    color: theme.colors.text,
-    opacity: 0.9,
-  },
-  actionCardsContainer: {
-    flexDirection: 'row',
+  breakdownSection: {
     paddingHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.xl,
-    gap: theme.spacing.md,
+    marginBottom: theme.spacing.xxxl,
   },
-  actionCard: {
-    ...createCardStyle('sm'),
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: theme.spacing.lg,
-  },
-  actionIconContainer: {
-    ...createCircularButtonStyle(48),
-    backgroundColor: theme.colors.surfaceTertiary,
-    marginBottom: theme.spacing.sm,
-  },
-  actionCardText: {
-    ...theme.typography.footnote,
-    color: theme.colors.textSecondary,
-  },
-  sectionContainer: {
-    paddingHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.xl,
+  sectionHeaderCard: {
+    backgroundColor: 'transparent',
+    shadowOpacity: 0,
+    elevation: 0,
+    marginBottom: theme.spacing.lg,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.lg,
-  },
-  sectionTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sectionEmoji: {
-    fontSize: 24,
-    marginRight: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
   },
   sectionTitle: {
     ...theme.typography.title,
     color: theme.colors.text,
-    fontSize: 24,
+    fontSize: 22,
+    fontWeight: '500',
   },
-  sectionCount: {
-    ...theme.typography.footnote,
-    color: theme.colors.textSecondary,
-    backgroundColor: theme.colors.surfaceSecondary,
+  countBadge: {
+    backgroundColor: theme.colors.softTeal,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.xs,
     borderRadius: theme.borderRadius.pill,
   },
-  personCard: {
-    ...createCardStyle('sm'),
+  countText: {
+    ...theme.typography.footnote,
+    color: theme.colors.teal,
+    fontWeight: '600',
+  },
+  personRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.xl,
     marginBottom: theme.spacing.md,
   },
   personInfo: {
@@ -384,80 +461,49 @@ const styles = StyleSheet.create({
   personName: {
     ...theme.typography.body,
     color: theme.colors.text,
-    fontWeight: '600',
+    fontWeight: '500',
     marginBottom: 2,
   },
-  personHours: {
-    ...theme.typography.caption,
+  personDetails: {
+    ...theme.typography.footnote,
     color: theme.colors.textSecondary,
-  },
-  personPayout: {
-    alignItems: 'flex-end',
   },
   personAmount: {
     ...theme.typography.heading,
     color: theme.colors.success,
-    fontWeight: '700',
+    fontWeight: '600',
+  },
+  verificationSection: {
+    paddingHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.xl,
+    backgroundColor: 'transparent',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   verificationCard: {
-    ...createCardStyle('sm'),
-    marginHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.xl,
+    backgroundColor: theme.colors.softTeal,
+    borderRadius: theme.borderRadius.xl,
     padding: theme.spacing.lg,
-    backgroundColor: theme.colors.surfaceSecondary,
+    alignItems: 'center',
   },
   verificationTitle: {
     ...theme.typography.body,
-    color: theme.colors.text,
+    color: theme.colors.teal,
     fontWeight: '600',
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.xs,
   },
-  verificationRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: theme.spacing.sm,
-  },
-  verificationLabel: {
-    ...theme.typography.caption,
+  verificationSubtitle: {
+    ...theme.typography.footnote,
     color: theme.colors.textSecondary,
+    textAlign: 'center',
   },
-  verificationAmount: {
-    ...theme.typography.caption,
-    color: theme.colors.text,
-    fontWeight: '500',
+  bottomSpacing: {
+    height: theme.spacing.xxxxl,
   },
-  bottomActions: {
-    flexDirection: 'row',
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.xl,
-    gap: theme.spacing.md,
-  },
-  resetButton: {
-    ...createButtonStyle('secondary', 'lg'),
-    flex: 1,
-  },
-  resetButtonText: {
-    ...theme.typography.body,
-    color: theme.colors.text,
-    fontWeight: '600',
-  },
-  shareMainButton: {
-    flex: 1,
-    borderRadius: theme.borderRadius.pill,
-    overflow: 'hidden',
-    ...theme.shadows.md,
-  },
-  shareButtonGradient: {
-    ...createButtonStyle('primary', 'lg'),
-    backgroundColor: 'transparent',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
-  },
-  shareMainButtonText: {
-    ...theme.typography.body,
-    color: theme.colors.text,
-    fontWeight: '600',
+  floatingAction: {
+    position: 'absolute',
+    bottom: theme.spacing.xl,
+    right: theme.spacing.xl,
   },
 });
 

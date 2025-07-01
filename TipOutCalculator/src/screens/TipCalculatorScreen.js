@@ -5,7 +5,11 @@ import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import Keypad from '../components/Keypad';
 import PercentageSlider from '../components/PercentageSlider';
-import { theme, createButtonStyle, createCardStyle, createCircularButtonStyle } from '../theme';
+import CircularActionCard from '../components/CircularActionCard';
+import AnimatedCard from '../components/AnimatedCard';
+import FloatingActionButton from '../components/FloatingActionButton';
+import AnimatedNumber from '../components/AnimatedNumber';
+import { theme, createButtonStyle, createCardStyle } from '../theme';
 
 const { width } = Dimensions.get('window');
 
@@ -29,7 +33,7 @@ const TipCalculatorScreen = ({ tipData, setTipData, onNext }) => {
   };
 
   const handleDeletePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (displayValue.length > 1) {
       setDisplayValue(displayValue.slice(0, -1));
     } else {
@@ -38,16 +42,23 @@ const TipCalculatorScreen = ({ tipData, setTipData, onNext }) => {
   };
 
   const handleSave = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     const amount = parseFloat(displayValue) || 0;
     setTipData(prev => ({
       ...prev,
       totalTips: amount
     }));
+    
+    // Success feedback
+    setTimeout(() => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }, 100);
+    
     onNext();
   };
 
   const handlePercentageChange = (percentage) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setTipData(prev => ({
       ...prev,
       supportStaffPercentage: percentage
@@ -65,123 +76,160 @@ const TipCalculatorScreen = ({ tipData, setTipData, onNext }) => {
   const quickAmounts = [100, 250, 500, 1000];
 
   const setQuickAmount = (amount) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setDisplayValue(amount.toString());
+    
+    // Success feedback for quick selection
+    setTimeout(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }, 50);
   };
+
+  const currentAmount = parseFloat(displayValue) || 0;
+  const bartenderAmount = currentAmount * (100 - tipData.supportStaffPercentage) / 100;
+  const supportAmount = currentAmount * tipData.supportStaffPercentage / 100;
 
   return (
     <View style={styles.container}>
-      {/* Main Amount Display */}
-      <View style={styles.displayContainer}>
-        <Text style={styles.availableText}>Total Tips for Tonight</Text>
-        <Text style={styles.amountText}>
-          {formatCurrency(displayValue)}
-        </Text>
-        
-        {/* Quick Amount Buttons */}
-        <View style={styles.quickAmountsContainer}>
-          {quickAmounts.map((amount) => (
-            <TouchableOpacity
-              key={amount}
-              style={styles.quickAmountButton}
-              onPress={() => setQuickAmount(amount)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.quickAmountText}>${amount}</Text>
-            </TouchableOpacity>
-          ))}
+      {/* Hero Amount Display with Animation */}
+      <AnimatedCard
+        animationType="scale"
+        delay={0}
+        style={styles.heroCard}
+      >
+        <View style={styles.heroSection}>
+          <Text style={styles.availableText}>Available</Text>
+          <Text style={styles.amountText}>
+            {formatCurrency(displayValue)}
+          </Text>
+          <Text style={styles.subtitleText}>Tonight's Total Tips</Text>
+          
+          {/* Quick Amount Pills with Staggered Animation */}
+          <View style={styles.quickAmountsContainer}>
+            {quickAmounts.map((amount, index) => (
+              <AnimatedCard
+                key={amount}
+                animationType="scale"
+                delay={200 + (index * 100)}
+                onPress={() => setQuickAmount(amount)}
+                style={styles.quickAmountCard}
+              >
+                <Text style={styles.quickAmountText}>${amount}</Text>
+              </AnimatedCard>
+            ))}
+          </View>
         </View>
-      </View>
+      </AnimatedCard>
 
-      {/* Percentage Slider */}
-      <View style={styles.sliderContainer}>
-        <PercentageSlider
-          value={tipData.supportStaffPercentage}
-          onValueChange={handlePercentageChange}
-          min={0}
-          max={50}
-          step={5}
-          title="Support Staff Allocation"
+      {/* Circular Action Cards with Staggered Animation */}
+      <View style={styles.actionsContainer}>
+        <CircularActionCard
+          icon="document-text-outline"
+          label="Notes"
+          color={theme.colors.teal}
+          size="medium"
+          delay={600}
+          animationType="bounce"
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }}
+        />
+        <CircularActionCard
+          icon="time-outline"
+          label="History"
+          color={theme.colors.purple}
+          size="medium"
+          delay={700}
+          animationType="bounce"
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }}
+        />
+        <CircularActionCard
+          icon="settings-outline"
+          label="Settings"
+          color={theme.colors.coral}
+          size="medium"
+          delay={800}
+          animationType="bounce"
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }}
+        />
+        <CircularActionCard
+          icon="help-circle-outline"
+          label="Help"
+          color={theme.colors.mint}
+          size="medium"
+          delay={900}
+          animationType="bounce"
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }}
         />
       </View>
 
-      {/* Action Cards */}
-      <View style={styles.actionsContainer}>
-        <View style={styles.actionRow}>
-          <TouchableOpacity style={styles.actionCard} activeOpacity={0.8}>
-            <View style={styles.actionIconContainer}>
-              <Ionicons name="document-text-outline" size={24} color={theme.colors.teal} />
-            </View>
-            <Text style={styles.actionText}>Notes</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.actionCard} activeOpacity={0.8}>
-            <View style={styles.actionIconContainer}>
-              <Ionicons name="calendar-outline" size={24} color={theme.colors.purple} />
-            </View>
-            <Text style={styles.actionText}>History</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.actionCard} activeOpacity={0.8}>
-            <View style={styles.actionIconContainer}>
-              <Ionicons name="share-outline" size={24} color={theme.colors.coral} />
-            </View>
-            <Text style={styles.actionText}>Share</Text>
-          </TouchableOpacity>
+      {/* Support Staff Percentage with Animation */}
+      <AnimatedCard
+        animationType="slideUp"
+        delay={1000}
+        style={styles.sliderCard}
+      >
+        <View style={styles.sliderSection}>
+          <PercentageSlider
+            value={tipData.supportStaffPercentage}
+            onValueChange={handlePercentageChange}
+            min={0}
+            max={50}
+            step={5}
+            title="Support Staff Share"
+          />
         </View>
-      </View>
+      </AnimatedCard>
 
-      {/* Preview Cards */}
+      {/* Split Preview with Animation and Animated Numbers */}
       <View style={styles.previewContainer}>
-        <View style={styles.previewRow}>
-          <View style={styles.previewCard}>
-            <Text style={styles.previewEmoji}>🍸</Text>
-            <Text style={styles.previewTitle}>Bartenders</Text>
-            <Text style={styles.previewAmount}>
-              {formatCurrency((parseFloat(displayValue) || 0) * (100 - tipData.supportStaffPercentage) / 100)}
-            </Text>
-            <Text style={styles.previewPercentage}>{100 - tipData.supportStaffPercentage}%</Text>
-          </View>
-          
-          <View style={styles.previewCard}>
-            <Text style={styles.previewEmoji}>🛠</Text>
-            <Text style={styles.previewTitle}>Support</Text>
-            <Text style={styles.previewAmount}>
-              {formatCurrency((parseFloat(displayValue) || 0) * tipData.supportStaffPercentage / 100)}
-            </Text>
-            <Text style={styles.previewPercentage}>{tipData.supportStaffPercentage}%</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Continue Button */}
-      <View style={styles.continueContainer}>
-        <TouchableOpacity 
-          style={[styles.continueButton, parseFloat(displayValue) > 0 && styles.continueButtonActive]}
-          onPress={handleSave}
-          disabled={parseFloat(displayValue) <= 0}
-          activeOpacity={0.8}
+        <AnimatedCard
+          animationType="slideUp"
+          delay={1200}
+          style={styles.splitCard}
         >
           <LinearGradient
-            colors={parseFloat(displayValue) > 0 
-              ? [theme.colors.teal, '#00B794'] 
-              : [theme.colors.surfaceSecondary, theme.colors.surfaceSecondary]
-            }
-            style={styles.continueButtonGradient}
+            colors={[theme.colors.teal, theme.colors.tealDark]}
+            style={styles.splitGradient}
           >
-            <Text style={[
-              styles.continueButtonText,
-              parseFloat(displayValue) > 0 && styles.continueButtonTextActive
-            ]}>
-              Continue to Bartenders
-            </Text>
-            <Ionicons 
-              name="arrow-forward" 
-              size={20} 
-              color={parseFloat(displayValue) > 0 ? theme.colors.text : theme.colors.textSecondary} 
+            <Text style={styles.splitEmoji}>🍸</Text>
+            <Text style={styles.splitLabel}>Bartenders</Text>
+            <AnimatedNumber
+              value={bartenderAmount}
+              style={styles.splitAmount}
+              duration={600}
+              delay={1400}
             />
+            <Text style={styles.splitPercentage}>{100 - tipData.supportStaffPercentage}%</Text>
           </LinearGradient>
-        </TouchableOpacity>
+        </AnimatedCard>
+        
+        <AnimatedCard
+          animationType="slideUp"
+          delay={1300}
+          style={styles.splitCard}
+        >
+          <LinearGradient
+            colors={[theme.colors.purple, theme.colors.purpleDark]}
+            style={styles.splitGradient}
+          >
+            <Text style={styles.splitEmoji}>🛠</Text>
+            <Text style={styles.splitLabel}>Support</Text>
+            <AnimatedNumber
+              value={supportAmount}
+              style={styles.splitAmount}
+              duration={600}
+              delay={1500}
+            />
+            <Text style={styles.splitPercentage}>{tipData.supportStaffPercentage}%</Text>
+          </LinearGradient>
+        </AnimatedCard>
       </View>
 
       {/* Modern Keypad */}
@@ -190,6 +238,20 @@ const TipCalculatorScreen = ({ tipData, setTipData, onNext }) => {
         onDecimalPress={handleDecimalPress}
         onDeletePress={handleDeletePress}
       />
+
+      {/* Enhanced Floating Continue Button */}
+      <FloatingActionButton
+        onPress={handleSave}
+        visible={parseFloat(displayValue) > 0}
+        delay={1600}
+        style={styles.floatingActionContainer}
+        colors={[theme.colors.teal, theme.colors.tealDark]}
+      >
+        <View style={styles.continueContent}>
+          <Text style={styles.continueButtonText}>Continue</Text>
+          <Ionicons name="arrow-forward" size={20} color={theme.colors.text} />
+        </View>
+      </FloatingActionButton>
     </View>
   );
 };
@@ -199,129 +261,123 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  displayContainer: {
+  heroCard: {
+    backgroundColor: 'transparent',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  heroSection: {
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.xxxxl,
   },
   availableText: {
     ...theme.typography.caption,
     color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.md,
-    textAlign: 'center',
+    marginBottom: theme.spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   amountText: {
-    ...theme.typography.display,
+    ...theme.typography.hero,
     color: theme.colors.text,
     textAlign: 'center',
-    marginBottom: theme.spacing.lg,
+    marginBottom: theme.spacing.xs,
+  },
+  subtitleText: {
+    ...theme.typography.footnote,
+    color: theme.colors.textTertiary,
+    marginBottom: theme.spacing.xl,
   },
   quickAmountsContainer: {
     flexDirection: 'row',
-    gap: theme.spacing.md,
+    gap: theme.spacing.sm,
     flexWrap: 'wrap',
     justifyContent: 'center',
   },
-  quickAmountButton: {
-    ...createButtonStyle('secondary', 'sm'),
-    minWidth: 60,
+  quickAmountCard: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    backgroundColor: theme.colors.surfaceSecondary,
+    borderRadius: theme.borderRadius.pill,
   },
   quickAmountText: {
+    ...theme.typography.footnote,
     color: theme.colors.text,
-    fontSize: 14,
     fontWeight: '500',
   },
-  sliderContainer: {
-    paddingHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.lg,
-  },
   actionsContainer: {
-    paddingHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.lg,
-  },
-  actionRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: theme.spacing.md,
+    justifyContent: 'space-around',
+    paddingHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing.xxxl,
   },
-  actionCard: {
-    ...createCardStyle('sm'),
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.sm,
+  sliderCard: {
+    backgroundColor: 'transparent',
+    shadowOpacity: 0,
+    elevation: 0,
   },
-  actionIconContainer: {
-    ...createCircularButtonStyle(40),
-    backgroundColor: theme.colors.surfaceTertiary,
-    marginBottom: theme.spacing.sm,
-  },
-  actionText: {
-    ...theme.typography.footnote,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
+  sliderSection: {
+    paddingHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.xxl,
   },
   previewContainer: {
     paddingHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.lg,
-  },
-  previewRow: {
+    marginBottom: theme.spacing.xl,
     flexDirection: 'row',
     gap: theme.spacing.md,
   },
-  previewCard: {
-    ...createCardStyle('sm'),
+  splitCard: {
     flex: 1,
-    alignItems: 'center',
-    paddingVertical: theme.spacing.lg,
-    paddingHorizontal: theme.spacing.md,
-  },
-  previewEmoji: {
-    fontSize: 24,
-    marginBottom: theme.spacing.sm,
-  },
-  previewTitle: {
-    ...theme.typography.footnote,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.xs,
-  },
-  previewAmount: {
-    ...theme.typography.body,
-    color: theme.colors.text,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  previewPercentage: {
-    ...theme.typography.footnote,
-    color: theme.colors.teal,
-  },
-  continueContainer: {
-    paddingHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.lg,
-  },
-  continueButton: {
-    borderRadius: theme.borderRadius.pill,
     overflow: 'hidden',
   },
-  continueButtonGradient: {
-    ...createButtonStyle('primary', 'lg'),
-    backgroundColor: 'transparent',
+  splitGradient: {
+    padding: theme.spacing.lg,
+    alignItems: 'center',
+    minHeight: 140,
+    justifyContent: 'center',
+  },
+  splitEmoji: {
+    fontSize: 32,
+    marginBottom: theme.spacing.sm,
+  },
+  splitLabel: {
+    ...theme.typography.footnote,
+    color: theme.colors.text,
+    opacity: 0.9,
+    marginBottom: theme.spacing.md,
+    fontWeight: '500',
+  },
+  splitAmount: {
+    ...theme.typography.heading,
+    color: theme.colors.text,
+    fontWeight: '600',
+    marginBottom: theme.spacing.sm,
+    fontSize: 22,
+  },
+  splitPercentage: {
+    ...theme.typography.micro,
+    color: theme.colors.text,
+    opacity: 0.8,
+    fontWeight: '600',
+  },
+  floatingActionContainer: {
+    position: 'absolute',
+    bottom: theme.spacing.xl,
+    left: theme.spacing.lg,
+    right: theme.spacing.lg,
+    alignSelf: 'stretch',
+  },
+  continueContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: theme.spacing.sm,
   },
   continueButtonText: {
     ...theme.typography.body,
-    fontWeight: '600',
-    color: theme.colors.textSecondary,
-    flex: 1,
-    textAlign: 'center',
-  },
-  continueButtonTextActive: {
     color: theme.colors.text,
-  },
-  continueButtonActive: {
-    ...theme.shadows.md,
+    fontWeight: '600',
   },
 });
 
