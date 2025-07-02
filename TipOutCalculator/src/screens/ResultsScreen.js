@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
@@ -16,8 +16,16 @@ import MinimalValueCard from '../components/MinimalValueCard';
 import AnimatedCard from '../components/AnimatedCard';
 import FloatingActionButton from '../components/FloatingActionButton';
 import AnimatedNumber from '../components/AnimatedNumber';
+import ToastNotification from '../components/ToastNotification';
+import CelebrationEffect from '../components/CelebrationEffect';
 
 const ResultsScreen = ({ tipData, setTipData, onPrevious }) => {
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('success');
+  const [celebrationVisible, setCelebrationVisible] = useState(false);
+  const [celebrationType, setCelebrationType] = useState('confetti');
+
   const calculateResults = () => {
     const { totalTips, bartenders, supportStaff, supportStaffPercentage } = tipData;
     
@@ -52,6 +60,17 @@ const ResultsScreen = ({ tipData, setTipData, onPrevious }) => {
 
   const results = calculateResults();
 
+  const showToast = (message, type = 'success') => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+  };
+
+  const showCelebration = (type = 'confetti') => {
+    setCelebrationType(type);
+    setCelebrationVisible(true);
+  };
+
   const shareResults = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
@@ -78,29 +97,62 @@ const ResultsScreen = ({ tipData, setTipData, onPrevious }) => {
         title: 'Tonight\'s Tips'
       });
       
-      // Success haptic feedback
+      // Success feedback with celebration
       setTimeout(() => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        showToast('Results shared successfully! 🎉', 'success');
+        showCelebration('sparkle');
       }, 100);
     } catch (error) {
       console.error('Error sharing:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      showToast('Failed to share results', 'error');
     }
+  };
+
+  const saveResults = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    // Simulate save operation
+    setTimeout(() => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showToast('Results saved to your records! 💾', 'success');
+      showCelebration('pulse');
+    }, 500);
+  };
+
+  const printResults = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    // Simulate print operation
+    setTimeout(() => {
+      showToast('Print feature coming soon! 🖨️', 'info');
+    }, 300);
   };
 
   const resetCalculator = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    setTipData({
-      totalTips: 0,
-      bartenders: [],
-      supportStaff: [],
-      supportStaffPercentage: 20
-    });
     
-    // Success feedback after reset
+    // Show confirmation celebration first
+    showCelebration('confetti');
+    
     setTimeout(() => {
+      setTipData({
+        totalTips: 0,
+        bartenders: [],
+        supportStaff: [],
+        supportStaffPercentage: 20
+      });
+      
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    }, 200);
+      showToast('Ready for new calculation! ✨', 'success');
+    }, 1000);
+  };
+
+  const handlePersonRowPress = (person, type) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const message = `${person.name}: $${person.tipAmount.toFixed(2)} (${person.percentage.toFixed(1)}%)`;
+    showToast(message, 'info');
   };
 
   return (
@@ -139,6 +191,10 @@ const ResultsScreen = ({ tipData, setTipData, onPrevious }) => {
               delay={400}
               onAnimationComplete={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                // Show celebration for large amounts
+                if (results.totalTips > 1000) {
+                  showCelebration('confetti');
+                }
               }}
             />
             <Text style={styles.totalSubtitle}>
@@ -161,10 +217,7 @@ const ResultsScreen = ({ tipData, setTipData, onPrevious }) => {
             icon="save-outline"
             label="Save"
             color={theme.colors.purple}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            }}
+            onPress={saveResults}
             delay={700}
             animationType="bounce"
           />
@@ -172,9 +225,7 @@ const ResultsScreen = ({ tipData, setTipData, onPrevious }) => {
             icon="print-outline"
             label="Print"
             color={theme.colors.coral}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            }}
+            onPress={printResults}
             delay={800}
             animationType="bounce"
           />
@@ -238,9 +289,7 @@ const ResultsScreen = ({ tipData, setTipData, onPrevious }) => {
                 key={bartender.id}
                 animationType="slideUp"
                 delay={1300 + (index * 100)}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
+                onPress={() => handlePersonRowPress(bartender, 'bartender')}
               >
                 <View style={styles.personRow}>
                   <View style={styles.personInfo}>
@@ -281,9 +330,7 @@ const ResultsScreen = ({ tipData, setTipData, onPrevious }) => {
                 key={staff.id}
                 animationType="slideUp"
                 delay={1400 + (results.bartenderResults.length * 100) + (index * 100)}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
+                onPress={() => handlePersonRowPress(staff, 'support')}
               >
                 <View style={styles.personRow}>
                   <View style={styles.personInfo}>
@@ -331,6 +378,22 @@ const ResultsScreen = ({ tipData, setTipData, onPrevious }) => {
       >
         <Ionicons name="share-outline" size={24} color={theme.colors.text} />
       </FloatingActionButton>
+
+      {/* Toast Notification */}
+      <ToastNotification
+        visible={toastVisible}
+        message={toastMessage}
+        type={toastType}
+        onHide={() => setToastVisible(false)}
+        position="top"
+      />
+
+      {/* Celebration Effect */}
+      <CelebrationEffect
+        visible={celebrationVisible}
+        type={celebrationType}
+        onComplete={() => setCelebrationVisible(false)}
+      />
     </View>
   );
 };
