@@ -18,6 +18,7 @@ import BartenderEntryScreen from './src/screens/BartenderEntryScreen';
 import SupportStaffScreen from './src/screens/SupportStaffScreen';
 import ResultsScreen from './src/screens/ResultsScreen';
 import { theme } from './src/theme';
+import PushNotificationService from './src/components/PushNotificationService';
 
 const { width } = Dimensions.get('window');
 
@@ -44,6 +45,25 @@ export default function App() {
     { component: SupportStaffScreen, title: 'Support', icon: '🛠' },
     { component: ResultsScreen, title: 'Results', icon: '🎉' }
   ];
+
+  useEffect(() => {
+    // Initialize push notifications
+    const initializeNotifications = async () => {
+      try {
+        await PushNotificationService.initialize();
+        console.log('Push notifications initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize push notifications:', error);
+      }
+    };
+
+    initializeNotifications();
+
+    // Cleanup on unmount
+    return () => {
+      PushNotificationService.cleanup();
+    };
+  }, []);
 
   useEffect(() => {
     // Animate header on mount

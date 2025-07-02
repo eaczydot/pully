@@ -1,33 +1,31 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, Animated, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { theme } from '../theme';
 
 const { width } = Dimensions.get('window');
 
-const ToastNotification = ({
-  visible,
-  message,
-  type = 'success', // 'success', 'error', 'warning', 'info'
-  duration = 3000,
+const ToastNotification = ({ 
+  visible, 
   onHide,
-  position = 'top', // 'top', 'bottom'
+  duration = 3000 
 }) => {
-  const translateY = useRef(new Animated.Value(position === 'top' ? -100 : 100)).current;
+  const translateY = useRef(new Animated.Value(-100)).current;
   const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.9)).current;
-  const iconScale = useRef(new Animated.Value(0)).current;
-  const progressWidth = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0.8)).current;
+  const progressWidth = useRef(new Animated.Value(width - 80)).current;
 
   useEffect(() => {
     if (visible) {
+      // Light haptic for info notification
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      
       // Entrance animation
       Animated.parallel([
         Animated.spring(translateY, {
           toValue: 0,
-          tension: 100,
+          tension: 150,
           friction: 8,
           useNativeDriver: true,
         }),
@@ -38,59 +36,38 @@ const ToastNotification = ({
         }),
         Animated.spring(scale, {
           toValue: 1,
-          tension: 120,
-          friction: 7,
+          tension: 150,
+          friction: 8,
           useNativeDriver: true,
         }),
       ]).start();
-
-      // Icon animation
-      setTimeout(() => {
-        Animated.spring(iconScale, {
-          toValue: 1,
-          tension: 200,
-          friction: 6,
-          useNativeDriver: true,
-        }).start();
-
-        // Haptic feedback based on type
-        switch (type) {
-          case 'success':
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            break;
-          case 'error':
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            break;
-          case 'warning':
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            break;
-          default:
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        }
-      }, 150);
-
+      
       // Progress bar animation
       Animated.timing(progressWidth, {
-        toValue: 1,
+        toValue: 0,
         duration: duration,
         useNativeDriver: false,
       }).start();
 
       // Auto hide
-      const hideTimer = setTimeout(() => {
+      const hideTimeout = setTimeout(() => {
         hideToast();
       }, duration);
 
-      return () => clearTimeout(hideTimer);
+      return () => clearTimeout(hideTimeout);
     } else {
-      hideToast();
+      // Reset values when not visible
+      translateY.setValue(-100);
+      opacity.setValue(0);
+      scale.setValue(0.8);
+      progressWidth.setValue(width - 80);
     }
-  }, [visible, translateY, opacity, scale, iconScale, progressWidth, duration, type]);
+  }, [visible]);
 
   const hideToast = () => {
     Animated.parallel([
       Animated.timing(translateY, {
-        toValue: position === 'top' ? -100 : 100,
+        toValue: -100,
         duration: 250,
         useNativeDriver: true,
       }),
@@ -100,53 +77,14 @@ const ToastNotification = ({
         useNativeDriver: true,
       }),
       Animated.timing(scale, {
-        toValue: 0.9,
+        toValue: 0.8,
         duration: 250,
         useNativeDriver: true,
       }),
     ]).start(() => {
       if (onHide) onHide();
-      progressWidth.setValue(0);
-      iconScale.setValue(0);
     });
   };
-
-  const getToastConfig = () => {
-    switch (type) {
-      case 'success':
-        return {
-          colors: [theme.colors.success, '#2EAD4A'],
-          icon: 'checkmark-circle',
-          backgroundColor: theme.colors.success,
-        };
-      case 'error':
-        return {
-          colors: [theme.colors.error, '#D32F2F'],
-          icon: 'close-circle',
-          backgroundColor: theme.colors.error,
-        };
-      case 'warning':
-        return {
-          colors: [theme.colors.warning, '#F57C00'],
-          icon: 'warning',
-          backgroundColor: theme.colors.warning,
-        };
-      case 'info':
-        return {
-          colors: [theme.colors.primary, theme.colors.primaryDark],
-          icon: 'information-circle',
-          backgroundColor: theme.colors.primary,
-        };
-      default:
-        return {
-          colors: [theme.colors.teal, theme.colors.tealDark],
-          icon: 'checkmark-circle',
-          backgroundColor: theme.colors.teal,
-        };
-    }
-  };
-
-  const config = getToastConfig();
 
   if (!visible) return null;
 
@@ -154,58 +92,37 @@ const ToastNotification = ({
     <Animated.View
       style={[
         styles.container,
-        position === 'top' ? styles.topPosition : styles.bottomPosition,
         {
-          opacity,
           transform: [
             { translateY },
             { scale },
           ],
+          opacity,
         },
       ]}
     >
-      <LinearGradient
-        colors={config.colors}
-        style={styles.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-      >
-        <View style={styles.content}>
-          <Animated.View
-            style={[
-              styles.iconContainer,
-              {
-                transform: [{ scale: iconScale }],
-              },
-            ]}
-          >
-            <Ionicons
-              name={config.icon}
-              size={24}
-              color={theme.colors.text}
-            />
-          </Animated.View>
-          
-          <Text style={styles.message} numberOfLines={2}>
-            {message}
-          </Text>
-        </View>
-
-        {/* Progress Bar */}
-        <View style={styles.progressContainer}>
-          <Animated.View
-            style={[
-              styles.progressBar,
-              {
-                width: progressWidth.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ['0%', '100%'],
-                }),
-              },
-            ]}
+      <View style={styles.content}>
+        <View style={styles.iconContainer}>
+          <Ionicons 
+            name="information-circle" 
+            size={24} 
+            color={theme.colors.info} 
           />
         </View>
-      </LinearGradient>
+        
+        <View style={styles.textContainer}>
+          <Text style={styles.message}>Check recent earnings</Text>
+        </View>
+      </View>
+      
+      <Animated.View
+        style={[
+          styles.progressBar,
+          {
+            width: progressWidth,
+          },
+        ]}
+      />
     </Animated.View>
   );
 };
@@ -213,47 +130,38 @@ const ToastNotification = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    left: theme.spacing.lg,
-    right: theme.spacing.lg,
-    zIndex: 1000,
-    borderRadius: theme.borderRadius.xl,
-    overflow: 'hidden',
-    ...theme.shadows.lg,
-  },
-  topPosition: {
     top: 60,
-  },
-  bottomPosition: {
-    bottom: 100,
-  },
-  gradient: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
+    left: 20,
+    right: 20,
+    backgroundColor: theme.colors.cardBackground,
+    borderRadius: theme.borderRadius.lg,
+    ...theme.shadows.md,
+    zIndex: 1000,
+    overflow: 'hidden',
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 16,
   },
   iconContainer: {
-    marginRight: theme.spacing.md,
+    marginRight: 12,
+  },
+  textContainer: {
+    flex: 1,
   },
   message: {
-    flex: 1,
-    ...theme.typography.body,
-    color: theme.colors.text,
-    fontWeight: '500',
+    fontSize: theme.typography.body.fontSize,
+    fontWeight: theme.typography.body.fontWeight,
+    color: theme.colors.textPrimary,
+    lineHeight: 20,
   },
-  progressContainer: {
+  progressBar: {
+    height: 3,
+    backgroundColor: theme.colors.info,
     position: 'absolute',
     bottom: 0,
     left: 0,
-    right: 0,
-    height: 3,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  progressBar: {
-    height: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
 });
 

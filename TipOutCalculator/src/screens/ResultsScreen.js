@@ -18,13 +18,13 @@ import FloatingActionButton from '../components/FloatingActionButton';
 import AnimatedNumber from '../components/AnimatedNumber';
 import ToastNotification from '../components/ToastNotification';
 import CelebrationEffect from '../components/CelebrationEffect';
+import PushNotificationService from '../components/PushNotificationService';
 
 const ResultsScreen = ({ tipData, setTipData, onPrevious }) => {
-  const [toastVisible, setToastVisible] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastType, setToastType] = useState('success');
-  const [celebrationVisible, setCelebrationVisible] = useState(false);
-  const [celebrationType, setCelebrationType] = useState('confetti');
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [isSendingNotifications, setIsSendingNotifications] = useState(false);
 
   const calculateResults = () => {
     const { totalTips, bartenders, supportStaff, supportStaffPercentage } = tipData;
@@ -60,65 +60,83 @@ const ResultsScreen = ({ tipData, setTipData, onPrevious }) => {
 
   const results = calculateResults();
 
-  const showToast = (message, type = 'success') => {
-    setToastMessage(message);
-    setToastType(type);
-    setToastVisible(true);
+
+
+  const handleSendNotifications = async () => {
+    try {
+      setIsSendingNotifications(true);
+      
+      // Prepare calculation data for notifications
+      const calculationData = {
+        workers: [...results.bartenderResults, ...results.supportResults].map(person => ({
+          id: person.id || `${person.name}_${Date.now()}`,
+          name: person.name,
+          role: person.role || 'staff', // Default role
+          totalEarnings: person.tipAmount,
+          cashEarnings: person.tipAmount * 0.6, // Assuming 60% cash (you can adjust)
+          cardEarnings: person.tipAmount * 0.4, // Assuming 40% card
+        })),
+        totalAmount: results.totalTips,
+        cashAmount: results.totalTips * 0.6, // Adjust based on your cash/card split
+        cardAmount: results.totalTips * 0.4,
+        date: new Date().toISOString(),
+        venue: 'Current Venue' // You can make this dynamic
+      };
+      
+      // Send notifications to all workers
+      await PushNotificationService.sendEndOfNightNotification(calculationData);
+      
+      // Show success feedback
+      setShowToast(true);
+      setShowCelebration(true);
+      
+    } catch (error) {
+      console.error('Error sending notifications:', error);
+      // Could show error toast here
+    } finally {
+      setIsSendingNotifications(false);
+    }
   };
 
-  const showCelebration = (type = 'confetti') => {
-    setCelebrationType(type);
-    setCelebrationVisible(true);
-  };
-
-  const shareResults = async () => {
+  const handleShare = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    let shareText = `💰 Tonight's Tips\n\n`;
-    shareText += `Total: $${results.totalTips.toFixed(2)}\n\n`;
-    
-    shareText += `🍸 BARTENDERS (${100 - tipData.supportStaffPercentage}%)\n`;
-    shareText += `Pool: $${results.bartenderPool.toFixed(2)}\n`;
-    results.bartenderResults.forEach(bartender => {
-      shareText += `${bartender.name}: $${bartender.tipAmount.toFixed(2)}\n`;
-    });
-    
-    if (results.supportResults.length > 0) {
-      shareText += `\n🛠 SUPPORT (${tipData.supportStaffPercentage}%)\n`;
-      shareText += `Pool: $${results.supportPool.toFixed(2)}\n`;
-      results.supportResults.forEach(staff => {
-        shareText += `${staff.name}: $${staff.tipAmount.toFixed(2)}\n`;
-      });
-    }
-
     try {
-      await Share.share({
-        message: shareText,
-        title: 'Tonight\'s Tips'
-      });
+      const shareData = {
+        title: 'Shifty - Tip Distribution',
+        message: `Total: $${results.totalTips.toFixed(2)}\n\nBreakdown:\n${[...results.bartenderResults, ...results.supportResults].map(p => `${p.name}: $${p.tipAmount.toFixed(2)}`).join('\n')}`,
+      };
       
-      // Success feedback with celebration
-      setTimeout(() => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        showToast('Results shared successfully! 🎉', 'success');
-        showCelebration('sparkle');
-      }, 100);
+      await Share.share(shareData);
+      
+      // Show celebration based on amount
+      setShowCelebration(true);
+      
     } catch (error) {
       console.error('Error sharing:', error);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      showToast('Failed to share results', 'error');
     }
   };
 
-  const saveResults = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  const handleSave = async () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     
-    // Simulate save operation
-    setTimeout(() => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      showToast('Results saved to your records! 💾', 'success');
-      showCelebration('pulse');
-    }, 500);
+    try {
+      const saveData = {
+        totalAmount: results.totalTips,
+        persons: [...results.bartenderResults, ...results.supportResults],
+        date: new Date().toISOString(),
+        id: Date.now().toString()
+      };
+      
+      await AsyncStorage.setItem(`tipout_${saveData.id}`, JSON.stringify(saveData));
+      
+      // Show celebration and toast
+      setShowCelebration(true);
+      setShowToast(true);
+      
+    } catch (error) {
+      console.error('Error saving:', error);
+    }
   };
 
   const printResults = () => {
@@ -206,36 +224,33 @@ const ResultsScreen = ({ tipData, setTipData, onPrevious }) => {
         {/* Primary Action Cards with Staggered Animation */}
         <View style={styles.primaryActionsContainer}>
           <CircularActionCard
-            icon="share-outline"
+            icon="share"
             label="Share"
             color={theme.colors.teal}
-            onPress={shareResults}
+            onPress={handleShare}
             delay={600}
-            animationType="bounce"
           />
           <CircularActionCard
-            icon="save-outline"
+            icon="save"
             label="Save"
             color={theme.colors.purple}
-            onPress={saveResults}
+            onPress={handleSave}
             delay={700}
-            animationType="bounce"
           />
           <CircularActionCard
-            icon="print-outline"
+            icon="print"
             label="Print"
             color={theme.colors.coral}
             onPress={printResults}
             delay={800}
-            animationType="bounce"
           />
           <CircularActionCard
-            icon="refresh-outline"
-            label="New"
+            icon="notifications"
+            label={isSendingNotifications ? "Sending..." : "Notify All"}
             color={theme.colors.mint}
-            onPress={resetCalculator}
+            onPress={handleSendNotifications}
             delay={900}
-            animationType="bounce"
+            disabled={isSendingNotifications}
           />
         </View>
 
@@ -371,28 +386,26 @@ const ResultsScreen = ({ tipData, setTipData, onPrevious }) => {
 
       {/* Enhanced Floating Action Button */}
       <FloatingActionButton
-        onPress={shareResults}
+        onPress={handleShare}
         visible={true}
         delay={2000}
         style={styles.floatingAction}
       >
-        <Ionicons name="share-outline" size={24} color={theme.colors.text} />
+        <Ionicons name="share" size={24} color={theme.colors.text} />
       </FloatingActionButton>
 
-      {/* Toast Notification */}
-      <ToastNotification
-        visible={toastVisible}
-        message={toastMessage}
-        type={toastType}
-        onHide={() => setToastVisible(false)}
-        position="top"
-      />
+              {/* Toast Notification */}
+        <ToastNotification
+          visible={showToast}
+          onHide={() => setShowToast(false)}
+        />
 
       {/* Celebration Effect */}
       <CelebrationEffect
-        visible={celebrationVisible}
-        type={celebrationType}
-        onComplete={() => setCelebrationVisible(false)}
+        visible={showCelebration}
+        type="auto"
+        amount={results.totalTips}
+        onComplete={() => setShowCelebration(false)}
       />
     </View>
   );
