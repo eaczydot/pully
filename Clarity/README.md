@@ -1,4 +1,4 @@
-# 🍸 Tip Out Calculator
+# 🍸 Clarity App
 
 A React Native iPhone app built with Expo that helps bartenders and managers calculate tip distribution fairly based on hours worked.
 
@@ -37,7 +37,7 @@ A React Native iPhone app built with Expo that helps bartenders and managers cal
 
 ```bash
 # Clone or download the project
-cd TipOutCalculator
+cd Clarity
 
 # Install dependencies
 npm install
@@ -92,7 +92,7 @@ If bartender worked 8 hours out of 24 total bartender hours:
 
 ### File Structure
 ```
-TipOutCalculator/
+Clarity/
 ├── App.js                 # Main app with navigation
 ├── src/
 │   ├── screens/
