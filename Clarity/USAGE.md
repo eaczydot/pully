@@ -1,10 +1,10 @@
-# 🍸 Tip Out Calculator - Quick Start Guide
+# 🍸 Clarity App - Quick Start Guide
 
 ## How to Use the App
 
 ### 1. Start the App
 ```bash
-cd TipOutCalculator
+cd Clarity
 npm run web    # For web browser
 npm run ios    # For iOS simulator (macOS only)
 npm run android # For Android emulator
@@ -83,7 +83,7 @@ const [tipData, setTipData] = useState({
 ### App Won't Start
 - Make sure all dependencies are installed: `npm install`
 - Clear cache: `npx expo start --clear`
-- Check that you're in the TipOutCalculator directory
+- Check that you're in the Clarity directory
 
 ### Math Doesn't Add Up
 - Check that all hours are entered correctly
